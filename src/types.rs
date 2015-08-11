@@ -183,6 +183,8 @@ fn gcd(a: i64, b: i64) -> i64 {
 impl Number {
 	pub fn simplify(&self) -> Number {
 		match *self {
+			RATIONAL(a,b) if b < 0 => RATIONAL(-a,-b).simplify(),
+			RATIONAL(a,b) if a < 0 => -RATIONAL(-a,b).simplify(),
 			RATIONAL(a,b) 	=> {
 				if a%b == 0 {
 					INTEGER(a/b)
