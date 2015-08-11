@@ -240,3 +240,23 @@ pub fn math_equal(args: List) -> Result<Datum, LispError> {
 	}
 	Ok(ATOM(T))
 }
+
+pub fn lisp_mod(args: List) -> Result<Datum, LispError> {
+	let mut nums = args.get_items();
+	if nums.len() < 2 {
+		return Err(NOT_ENOUGH_ARGUMENTS);
+	} else if nums.len() > 2 {
+		return Err(TOO_MANY_ARGUMENTS);
+	}
+
+	if let ATOM(NUMBER(a)) = nums[0] {
+		if let ATOM(NUMBER(b)) = nums[1] {
+			return Ok(ATOM(NUMBER(
+					a - b*INTEGER((a/b).val().floor() as i64))));
+		} else {
+			return Err(INVALID_ARGUMENT_TYPE);
+		}
+	} else {
+		return Err(INVALID_ARGUMENT_TYPE);
+	}
+}

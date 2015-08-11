@@ -80,7 +80,8 @@ fn apply_native(func: &Native, args: List, env: &mut Env) -> Result<Datum, LispE
 		GE 			=> greater_equal(List::from_vec(items)),
 		LT 			=> less_than(List::from_vec(items)),
 		LE 			=> less_equal(List::from_vec(items)),
-		MATH_EQUAL  => math_equal(List::from_vec(items)),
+		MATH_EQ     => math_equal(List::from_vec(items)),
+		MOD			=> lisp_mod(List::from_vec(items)),
 		//_			=> Err(NOT_YET_IMPLEMENTED)
 	}
 }
@@ -89,12 +90,38 @@ fn apply_special(func: &Special, args: List, env: &mut Env) -> Result<Datum, Lis
 	match *func {
 		DEFINE		=> define(args, env),
 		IF 			=> lisp_if(args, env),
+		LAMBDA_FUNC => lambda(args),
+		DEFUN 		=> defun(args, env),
 		_			=> Err(NOT_YET_IMPLEMENTED)
 	}
 }
 
 fn apply_lambda(func: &Lambda, args: List, env: &mut Env) -> Result<Datum, LispError> {
-	Err(NOT_YET_IMPLEMENTED)
+	let mut params = args.get_items();
+
+	if params.len() < func.args.len() {
+		return Err(NOT_ENOUGH_ARGUMENTS);
+	} else if params.len() > func.args.len() {
+		return Err(TOO_MANY_ARGUMENTS);
+	}
+
+	for i in 0..params.len() {
+		let res = eval(&params[i], env);
+		if res.is_err() {
+			return res;
+		} else {
+			params[i] = res.ok().unwrap();
+		}
+	}
+
+	env.push();
+	for param_arg in params.into_iter().zip(&func.args) {
+		env.set(param_arg.1.clone(), param_arg.0);
+	}
+	let res = eval(&func.body, env);
+	env.pop();
+
+	return res;
 }
 
 fn define(args: List, env: &mut Env) -> Result<Datum, LispError> {
@@ -144,5 +171,54 @@ fn lisp_if(args: List, env: &mut Env) -> Result<Datum, LispError> {
 			}
 		},
 		_	 	=> Err(TOO_MANY_ARGUMENTS)
+	}
+}
+
+fn lambda(args: List) -> Result<Datum, LispError> {
+	let lst = args.get_items();
+	if lst.len() < 2 {
+		return Err(NOT_ENOUGH_ARGUMENTS);
+	} else if lst.len() > 2 {
+		return Err(TOO_MANY_ARGUMENTS);
+	}
+
+	if let LIST(params) = lst[0].clone() {
+		let mut args: Vec<String> = vec![];
+		let params = params.get_items();
+
+		for param in params {
+			if let ATOM(SYMBOL(name)) = param {
+				args.push(name);
+			} else {
+				return Err(INVALID_ARGUMENT_TYPE);
+			}
+		}
+
+		let func = Lambda{args: args, body: Box::new(lst[1].clone())};
+		return Ok(FUNCTION(LAMBDA(func)));
+	} else {
+		return Err(INVALID_ARGUMENT_TYPE);
+	}
+}
+
+fn defun(args: List, env: &mut Env) -> Result<Datum, LispError> {
+	let lst = args.get_items();
+	if lst.len() < 3 {
+		return Err(NOT_ENOUGH_ARGUMENTS);
+	} else if lst.len() > 3 {
+		return Err(TOO_MANY_ARGUMENTS);
+	}
+
+	let lam = lambda(List::from_vec(vec!(lst[1].clone(), lst[2].clone())));
+	if lam.is_err() {
+		return lam;
+	} else if let ATOM(SYMBOL(name)) = lst[0].clone() {
+		match env.get(&name) {
+			Ok(FUNCTION(SPECIAL(_))) |
+			Ok(FUNCTION(NATIVE(_))) => return Err(INVALID_ARGUMENT_TYPE),
+			_						=> return Ok(env.set(name, lam.ok().unwrap()))
+		}
+	} else {
+		return Err(INVALID_ARGUMENT_TYPE)
 	}
 }

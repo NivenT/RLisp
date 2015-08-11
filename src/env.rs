@@ -21,6 +21,7 @@ impl Env {
 		map.insert("-".to_string(), FUNCTION(NATIVE(SUB)));
 		map.insert("*".to_string(), FUNCTION(NATIVE(MUL)));
 		map.insert("/".to_string(), FUNCTION(NATIVE(DIV)));
+		map.insert("MOD".to_string(), FUNCTION(NATIVE(MOD)));
 
 		map.insert(">".to_string(), FUNCTION(NATIVE(GT)));
 		map.insert(">=".to_string(), FUNCTION(NATIVE(GE)));
@@ -64,5 +65,13 @@ impl Env {
 	pub fn set(&mut self, key: String, val: Datum) -> Datum {
 		self.env_stack.last_mut().unwrap().insert(key, val.clone());
 		val
+	}
+
+	pub fn push(&mut self) {
+		self.env_stack.push(HashMap::new());
+	}
+
+	pub fn pop(&mut self) {
+		self.env_stack.pop();
 	}
 }

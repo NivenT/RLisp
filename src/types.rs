@@ -18,7 +18,7 @@ use self::Datum::*;
 impl fmt::Display for Datum {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match *self {
-			FUNCTION(ref a)	=> write!(f, "{:?}", a),
+			FUNCTION(ref a)	=> write!(f, "{}", a),
 			ATOM(ref a)		=> write!(f, "{}", a),
 			LIST(ref a)		=> write!(f, "{}", a)
 		}
@@ -225,6 +225,13 @@ impl Number {
 			e @ _			=> e
 		}
 	}
+	pub fn val(&self) -> f64 {
+		match *self {
+			RATIONAL(a,b)	=> a as f64/b as f64,
+			INTEGER(a)		=> a as f64,
+			REAL(a)			=> a
+		}
+	}
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -332,7 +339,7 @@ impl List {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Native {
-	ADD, SUB, MUL, DIV,
+	ADD, SUB, MUL, DIV, MOD,
 	GT, GE, LT, LE, MATH_EQ,
 	LIST_FUNC, CAR, CDR, CONS_FUNC,
 	NTH, NTH_CDR
@@ -350,8 +357,14 @@ pub enum Special {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Lambda {
-	args: List,
-	body: List
+	pub args: Vec<String>,
+	pub body: Box<Datum>
+}
+
+impl fmt::Display for Lambda {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(f, "Lambda{{args: {:?}, body: {}}}", self.args, self.body)
+	}
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -359,4 +372,16 @@ pub enum Function {
 	SPECIAL(Special),
 	NATIVE(Native),
 	LAMBDA(Lambda)
+}
+
+use self::Function::*;
+
+impl fmt::Display for Function {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match *self {
+			SPECIAL(s)		=> write!(f, "{:?}", s),
+			NATIVE(n)		=> write!(f, "{:?}", n),
+			LAMBDA(ref l)	=> write!(f, "{}", l)
+		}
+	}
 }
