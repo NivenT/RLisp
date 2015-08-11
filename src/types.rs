@@ -228,7 +228,7 @@ use self::List::*;
 impl fmt::Display for List {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match *self {
-			NIL 					=> write!(f, "nil"),
+			NIL 					=> write!(f, "NIL"),
 			CONS(ref l1, ref l2)	=> {
 				if self.last() == LIST(NIL) {
 					write!(f, "{}", self.list_print())
@@ -306,6 +306,16 @@ pub enum Native {
 	NTH, NTH_CDR
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Special {
+	IF,
+	LET, LET_STAR,
+	PROGN,
+	QUOTE, BACKQUOTE,
+	DEFINE, DEFUN,
+	LAMBDA_FUNC
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Lambda {
 	args: List,
@@ -314,6 +324,7 @@ pub struct Lambda {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Function {
+	SPECIAL(Special),
 	NATIVE(Native),
 	LAMBDA(Lambda)
 }

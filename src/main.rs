@@ -1,6 +1,6 @@
+mod native;
 mod parser;
 mod errors;
-mod funcs;
 mod types;
 mod eval;
 mod env;
@@ -60,7 +60,7 @@ fn main() {
 		}
 		
 		if result != Err(LispError::MISMATCHED_BRACKETS) {
-			result = eval(parse(&mut tokenize(&input)), &mut env)
+			result = eval(&parse(&mut tokenize(&input)), &mut env)
 		} match result {
 			Ok(ref a) 	=> println!("{}\n", *a),
 			Err(ref a)	=> println!("Error: {:?}\n", *a)

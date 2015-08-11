@@ -1,9 +1,9 @@
 use errors::*;
-use funcs::*;
 use types::*;
 
 use errors::LispError::*;
 use types::Function::*;
+use types::Special::*;
 use types::Native::*;
 use types::Datum::*;
 use types::List::*;
@@ -30,6 +30,16 @@ impl Env {
 		map.insert("NTHCDR".to_string(), FUNCTION(NATIVE(NTH_CDR)));
 		map.insert("NTH".to_string(), FUNCTION(NATIVE(NTH)));
 
+		map.insert("IF".to_string(), FUNCTION(SPECIAL(IF)));
+		map.insert("LET".to_string(), FUNCTION(SPECIAL(LET)));
+		map.insert("LET*".to_string(), FUNCTION(SPECIAL(LET_STAR)));
+		map.insert("PROGN".to_string(), FUNCTION(SPECIAL(PROGN)));
+		map.insert("QUOTE".to_string(), FUNCTION(SPECIAL(QUOTE)));
+		map.insert("BACKQUOTE".to_string(), FUNCTION(SPECIAL(BACKQUOTE)));
+		map.insert("DEFINE".to_string(), FUNCTION(SPECIAL(DEFINE)));
+		map.insert("DEFUN".to_string(), FUNCTION(SPECIAL(DEFUN)));
+		map.insert("LAMBDA".to_string(), FUNCTION(SPECIAL(LAMBDA_FUNC)));
+
 		map.insert("NIL".to_string(), LIST(NIL));
 
 		Env{env_stack: vec![map]}
@@ -45,19 +55,8 @@ impl Env {
 		Err(UNBOUND_VARIABLE)
 	}
 
-	pub fn apply(&self, func: Function, args: List) -> Result<Datum, LispError> {
-		match func {
-			NATIVE(ADD)			=> add(args),
-			NATIVE(SUB)			=> sub(args),
-			NATIVE(MUL)			=> mul(args),
-			NATIVE(DIV)			=> div(args),
-			NATIVE(LIST_FUNC) 	=> list(args),
-			NATIVE(CONS_FUNC)	=> cons(args),
-			NATIVE(CAR) 		=> car(args),
-			NATIVE(CDR)			=> cdr(args),
-			NATIVE(NTH_CDR)		=> nth_cdr(args),
-			NATIVE(NTH)			=> nth(args),
-			_					=> Err(UNKNOWN_FUNCTION)
-		}
+	pub fn set(&mut self, key: String, val: Datum) -> Datum {
+		self.env_stack.last_mut().unwrap().insert(key, val.clone());
+		val
 	}
 }
