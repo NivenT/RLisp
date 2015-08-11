@@ -1,5 +1,6 @@
 use std::fmt;
 use std::ops;
+use std::cmp;
 
 pub fn tail<T>(vec: Vec<T>) -> Vec<T> {
 	vec.into_iter().skip(1).collect()
@@ -170,6 +171,34 @@ impl ops::Neg for Number {
 	}
 }
 
+impl cmp::PartialOrd for Number {
+	fn partial_cmp(&self, rhs: &Number) -> Option<cmp::Ordering> {
+		match *self {
+			RATIONAL(a,b) => {
+				match *rhs {
+					RATIONAL(c,d)	=> (a*d).partial_cmp(&(c*b)),
+					INTEGER(c) 		=> a.partial_cmp(&(c*b)),
+					REAL(c)			=> (a as f64/b as f64).partial_cmp(&c)
+				}
+			}
+			INTEGER(a) => {
+				match *rhs {
+					RATIONAL(b,c)	=> (a*c).partial_cmp(&b),
+					INTEGER(b) 		=> a.partial_cmp(&b),
+					REAL(b)			=> (a as f64).partial_cmp(&b)
+				}
+			},
+			REAL(a) => {
+				match *rhs {
+					RATIONAL(b,c)	=> a.partial_cmp(&(b as f64/c as f64)),
+					INTEGER(b)		=> a.partial_cmp(&(b as f64)),
+					REAL(b)			=> a.partial_cmp(&b)
+				}
+			}
+		}
+	}
+}
+
 fn gcd(a: i64, b: i64) -> i64 {
 	if b > a {
 		gcd(b, a)
@@ -202,7 +231,8 @@ impl Number {
 pub enum Atom {
 	SYMBOL(String),
 	STRING(String),
-	NUMBER(Number)
+	NUMBER(Number),
+	T
 }
 
 use self::Atom::*;
@@ -212,7 +242,8 @@ impl fmt::Display for Atom {
 		match *self {
 			SYMBOL(ref a)	=> write!(f, "{}", a),
 			STRING(ref a)	=> write!(f, "\"{}\"", a),
-			NUMBER(ref a)	=> write!(f, "{}", a)
+			NUMBER(ref a)	=> write!(f, "{}", a),
+			T 				=> write!(f, "T")
 		}
 	}
 }
@@ -302,6 +333,7 @@ impl List {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Native {
 	ADD, SUB, MUL, DIV,
+	GT, GE, LT, LE, MATH_EQ,
 	LIST_FUNC, CAR, CDR, CONS_FUNC,
 	NTH, NTH_CDR
 }

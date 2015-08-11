@@ -76,6 +76,11 @@ fn apply_native(func: &Native, args: List, env: &mut Env) -> Result<Datum, LispE
 		CDR			=> cdr(List::from_vec(items)),
 		NTH_CDR		=> nth_cdr(List::from_vec(items)),
 		NTH			=> nth(List::from_vec(items)),
+		GT 			=> greater_than(List::from_vec(items)),
+		GE 			=> greater_equal(List::from_vec(items)),
+		LT 			=> less_than(List::from_vec(items)),
+		LE 			=> less_equal(List::from_vec(items)),
+		MATH_EQUAL  => math_equal(List::from_vec(items)),
 		//_			=> Err(NOT_YET_IMPLEMENTED)
 	}
 }
@@ -83,6 +88,7 @@ fn apply_native(func: &Native, args: List, env: &mut Env) -> Result<Datum, LispE
 fn apply_special(func: &Special, args: List, env: &mut Env) -> Result<Datum, LispError> {
 	match *func {
 		DEFINE		=> define(args, env),
+		IF 			=> lisp_if(args, env),
 		_			=> Err(NOT_YET_IMPLEMENTED)
 	}
 }
@@ -91,7 +97,7 @@ fn apply_lambda(func: &Lambda, args: List, env: &mut Env) -> Result<Datum, LispE
 	Err(NOT_YET_IMPLEMENTED)
 }
 
-pub fn define(args: List, env: &mut Env) -> Result<Datum, LispError> {
+fn define(args: List, env: &mut Env) -> Result<Datum, LispError> {
 	let lst = args.get_items();
 	match lst.len() {
 		0 | 1 => Err(NOT_ENOUGH_ARGUMENTS),
@@ -101,11 +107,42 @@ pub fn define(args: List, env: &mut Env) -> Result<Datum, LispError> {
 				if res.is_err() {
 					return res;
 				} else {
-					return Ok(env.set(sym, res.ok().unwrap()));
+					match env.get(&sym) {
+						Ok(FUNCTION(SPECIAL(_))) |
+						Ok(FUNCTION(NATIVE(_))) => return Err(INVALID_ARGUMENT_TYPE),
+						_						=> return Ok(env.set(sym, res.ok().unwrap()))
+					}
 				}
 			}
 			Err(INVALID_ARGUMENT_TYPE)
 		},
 		_ => Err(TOO_MANY_ARGUMENTS)
+	}
+}
+
+fn is_true(cond: Datum) -> bool {
+	match cond {
+		LIST(NIL)	=> false,
+		_			=> true
+	}
+}
+
+fn lisp_if(args: List, env: &mut Env) -> Result<Datum, LispError> {
+	let lst = args.get_items();
+	match lst.len() {
+		0 | 1 	=> Err(NOT_ENOUGH_ARGUMENTS),
+		2 | 3 	=> {
+			let res = eval(&lst[0], env);
+			if res.is_err() {
+				res
+			} else if is_true(res.ok().unwrap()) {
+				eval(&lst[1], env)
+			} else if lst.len() == 3 {
+				eval(&lst[2], env)
+			} else {
+				Ok(LIST(NIL))
+			}
+		},
+		_	 	=> Err(TOO_MANY_ARGUMENTS)
 	}
 }

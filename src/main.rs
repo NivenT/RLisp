@@ -66,12 +66,12 @@ fn main() {
 			Err(ref a)	=> println!("Error: {:?}\n", *a)
 		}
 
-		/*
+		
 		println!("Development output:");
 		println!("	tokens: {:?}\n", tokenize(&input));
 		println!("	parsed expression: {}\n", parse(&mut tokenize(&input)));
 		println!("	debug result: {:?}\n", result);
 		println!("\n");
-		*/
+		
 	}
 }

@@ -150,3 +150,93 @@ pub fn nth_cdr(args: List) -> Result<Datum, LispError> {
 		_ => Err(TOO_MANY_ARGUMENTS)
 	}
 }
+
+pub fn greater_than(args: List) -> Result<Datum, LispError> {
+	let mut nums = args.get_items();
+	for i in 1..nums.len() {
+		if let ATOM(NUMBER(a)) = nums[i-1] {
+			if let ATOM(NUMBER(b)) = nums[i] {
+				if a <= b {
+					return Ok(LIST(NIL));
+				}
+			} else {
+				return Err(INVALID_ARGUMENT_TYPE);
+			}
+		} else {
+			return Err(INVALID_ARGUMENT_TYPE);
+		}
+	}
+	Ok(ATOM(T))
+}
+
+pub fn greater_equal(args: List) -> Result<Datum, LispError> {
+	let mut nums = args.get_items();
+	for i in 1..nums.len() {
+		if let ATOM(NUMBER(a)) = nums[i-1] {
+			if let ATOM(NUMBER(b)) = nums[i] {
+				if a < b {
+					return Ok(LIST(NIL));
+				}
+			} else {
+				return Err(INVALID_ARGUMENT_TYPE);
+			}
+		} else {
+			return Err(INVALID_ARGUMENT_TYPE);
+		}
+	}
+	Ok(ATOM(T))
+}
+
+pub fn less_than(args: List) -> Result<Datum, LispError> {
+	let mut nums = args.get_items();
+	for i in 1..nums.len() {
+		if let ATOM(NUMBER(a)) = nums[i-1] {
+			if let ATOM(NUMBER(b)) = nums[i] {
+				if a >= b {
+					return Ok(LIST(NIL));
+				}
+			} else {
+				return Err(INVALID_ARGUMENT_TYPE);
+			}
+		} else {
+			return Err(INVALID_ARGUMENT_TYPE);
+		}
+	}
+	Ok(ATOM(T))
+}
+
+pub fn less_equal(args: List) -> Result<Datum, LispError> {
+	let mut nums = args.get_items();
+	for i in 1..nums.len() {
+		if let ATOM(NUMBER(a)) = nums[i-1] {
+			if let ATOM(NUMBER(b)) = nums[i] {
+				if a > b {
+					return Ok(LIST(NIL));
+				}
+			} else {
+				return Err(INVALID_ARGUMENT_TYPE);
+			}
+		} else {
+			return Err(INVALID_ARGUMENT_TYPE);
+		}
+	}
+	Ok(ATOM(T))
+}
+
+pub fn math_equal(args: List) -> Result<Datum, LispError> {
+	let mut nums = args.get_items();
+	for i in 1..nums.len() {
+		if let ATOM(NUMBER(a)) = nums[i-1] {
+			if let ATOM(NUMBER(b)) = nums[i] {
+				if a != b {
+					return Ok(LIST(NIL));
+				}
+			} else {
+				return Err(INVALID_ARGUMENT_TYPE);
+			}
+		} else {
+			return Err(INVALID_ARGUMENT_TYPE);
+		}
+	}
+	Ok(ATOM(T))
+}

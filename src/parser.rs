@@ -22,6 +22,8 @@ fn atomize(tkn: String) -> Atom {
 		   	NUMBER(RATIONAL(nums[0].parse::<i64>().unwrap(),
 		   					nums[1].parse::<i64>().unwrap()).simplify())
 		} else {SYMBOL(tkn)}
+	} else if tkn == "T".to_string() {
+		T
 	} else {
 		SYMBOL(tkn)
 	}
@@ -44,7 +46,7 @@ pub fn tokenize(str: &String) -> Vec<Atom> {
 }
 
 pub fn parse(tkns: &mut Vec<Atom>) -> Datum {
-	match tkns.pop().unwrap_or(SYMBOL("nil".to_string())) {
+	match tkns.pop().unwrap_or(SYMBOL("NIL".to_string())) {
 		SYMBOL(s)	=> {
 			if s==")" || s=="]" {
 				let mut lst = NIL;

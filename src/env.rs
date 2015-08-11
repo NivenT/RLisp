@@ -22,6 +22,12 @@ impl Env {
 		map.insert("*".to_string(), FUNCTION(NATIVE(MUL)));
 		map.insert("/".to_string(), FUNCTION(NATIVE(DIV)));
 
+		map.insert(">".to_string(), FUNCTION(NATIVE(GT)));
+		map.insert(">=".to_string(), FUNCTION(NATIVE(GE)));
+		map.insert("<".to_string(), FUNCTION(NATIVE(LT)));
+		map.insert("<=".to_string(), FUNCTION(NATIVE(LE)));
+		map.insert("=".to_string(), FUNCTION(NATIVE(MATH_EQ)));		
+
 		map.insert("LIST".to_string(), FUNCTION(NATIVE(LIST_FUNC)));
 		map.insert("CONS".to_string(), FUNCTION(NATIVE(CONS_FUNC)));
 		map.insert("CAR".to_string(), FUNCTION(NATIVE(CAR)));
