@@ -9,7 +9,7 @@ Install [Rust](https://www.rust-lang.org/) and then navigate to the src director
 ## How to Use
 Because this is a Lisp Interpreter, it makes use of a REPL. Enter your command and hit enter to see the result. Afterwards, repeat.
 
-## Native Functions
+## Native Functions/Special Forms
 Function | Description | Example input | Corresponding output
 --- | --- | --- | ---
 +,-,*,/ | Basic math functions | (* (+ 19 (- 5 4)) (/ 2 4)) | 10
@@ -20,8 +20,11 @@ cdr | Returns all but the first element of a list | (cdr (list 1 2 3 4)) | (2 3 
 cons | cons's the two arguments together | (cons 0 (list 1 2)) | (0 1 2)
 nth | returns the nth element of a list | (nth 2 (list 0 1 2 3 4)) | 2
 nthcdr | returns all but the first n elements of a list | (nthcdr 3 (list 1 2 3 4 5)) | (4 5)
-define | sets value of a symbol | (define x 10) | 10
+define | sets value of a symbol | (define x 10) / (+ x 5) | 10 / 15
 if | executes statement if condition is not nil | (if (= 5 5) 2 3) | 2
+lambda | creates an anonymous function | ((lambda (x y) (+ x y)) 4 3) | 7
+defun | shorthand for a combination of define and lambda | (defun add (x y) (+ x y)) / (add 10 22) | 32
+* / is used to separate different inputs
 
 ## TODO (in no particular order)
 - [ ] Add more native functions
