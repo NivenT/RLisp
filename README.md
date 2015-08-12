@@ -24,12 +24,14 @@ define | sets value of a symbol | (define x 10) / (+ x 5) | 10 / 15
 if | executes statement if condition is not nil | (if (= 5 5) 2 3) | 2
 lambda | creates an anonymous function | ((lambda (x y) (+ x y)) 4 3) | 7
 defun | shorthand for a combination of define and lambda | (defun add (x y) (+ x y)) / (add 10 22) | 32
+' or quote | returns the input unevaluated | '(1 2 3) | (1 2 3)
+\` or backquote | returns the input, only evaluating expressions after commas | \`(1 2 ,(+ 1 2)) | (1 2 3)
 * / is used to separate different inputs
 
 ## TODO (in no particular order)
 - [ ] Add more native functions
 - [ ] Add special forms
 - [ ] Add macros
-- [ ] Allow user to modify environment
-- [ ] Add quote and backquote
-- [ ] Make error messages more helpful
+- [X] Allow user to modify environment
+- [X] Add quote and backquote
+- [X] Make error messages more helpful
