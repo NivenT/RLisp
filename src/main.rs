@@ -34,11 +34,12 @@ fn matched_parentheses(s: &String) -> Option<bool> {
 
 fn main() {
 	let mut input = String::new();
-	let mut result: Result<Datum, LispError> = Ok(Datum::ATOM(Atom::SYMBOL("nil".to_string())));
+	let mut result: Result<Datum, LispError>;
 	let mut env = Env::new();
 
 	loop {
 		input.clear();
+		result =  Ok(Datum::LIST(List::NIL));
 
 		print!("RLisp>> "); io::stdout().flush().ok().expect("Could not flush stdout");
 		io::stdin().read_line(&mut input).ok()

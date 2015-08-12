@@ -49,7 +49,7 @@ impl Env {
 
 		map.insert("NIL".to_string(), LIST(NIL));
 
-		Env{env_stack: vec![map]}
+		Env{env_stack: vec![map, HashMap::new()]}
 	}
 
 	pub fn get(&self, key: &String) -> Result<Datum, LispError> {
@@ -71,7 +71,15 @@ impl Env {
 		self.env_stack.push(HashMap::new());
 	}
 
+	pub fn push_map(&mut self, map: &HashMap<String, Datum>) {
+		self.env_stack.push(map.clone());
+	}
+
 	pub fn pop(&mut self) {
 		self.env_stack.pop();
+	}
+
+	pub fn top(&self) -> HashMap<String, Datum> {
+		self.env_stack.last().unwrap().clone()
 	}
 }
