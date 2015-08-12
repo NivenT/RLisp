@@ -92,6 +92,8 @@ fn apply_special(func: &Special, args: List, env: &mut Env) -> Result<Datum, Lis
 		IF 			=> lisp_if(args, env),
 		LAMBDA_FUNC => lambda(args),
 		DEFUN 		=> defun(args, env),
+		QUOTE 		=> quote(args),
+		BACKQUOTE   => backquote(args, env),
 		_			=> Err(NOT_YET_IMPLEMENTED)
 	}
 }
@@ -220,5 +222,50 @@ fn defun(args: List, env: &mut Env) -> Result<Datum, LispError> {
 		}
 	} else {
 		return Err(INVALID_ARGUMENT_TYPE)
+	}
+}
+
+fn quote(args: List) -> Result<Datum, LispError> {
+	let lst = args.get_items();
+	if lst.len() < 1 {
+		Err(NOT_ENOUGH_ARGUMENTS)
+	} else if lst.len() > 1 {
+		Err(TOO_MANY_ARGUMENTS)
+	} else {
+		Ok(lst[0].clone())
+	}
+}
+
+fn backquote(args: List, env: &mut Env) -> Result<Datum, LispError> {
+	let lst = args.get_items();
+	if lst.len() < 1 {
+		Err(NOT_ENOUGH_ARGUMENTS)
+	} else if lst.len() > 1 {
+		Err(TOO_MANY_ARGUMENTS)
+	} else {
+		backquote_helper(&lst[0], env)
+	}
+}
+
+fn backquote_helper(arg: &Datum, env: &mut Env) -> Result<Datum, LispError> {
+	match *arg {
+		ref e @ ATOM(_) | ref e @ FUNCTION(_) 	=> Ok(e.clone()),
+		LIST(ref lst)							=> {
+			if lst.car() == ATOM(SYMBOL("COMMA".to_string())) {
+				eval(&lst.get_items()[1], env) //assumes list is of form (COMMA item)
+			} else {
+				let mut items = lst.get_items();
+				for i in 0..items.len() {
+					let res = eval(&items[i], env);
+					if res.is_err() {
+						return res;
+					} else {
+						items[i] = res.ok().unwrap();
+					}
+				}
+
+				Ok(LIST(List::from_vec(items)))
+			}
+		}
 	}
 }

@@ -152,7 +152,7 @@ pub fn nth_cdr(args: List) -> Result<Datum, LispError> {
 }
 
 pub fn greater_than(args: List) -> Result<Datum, LispError> {
-	let mut nums = args.get_items();
+	let nums = args.get_items();
 	for i in 1..nums.len() {
 		if let ATOM(NUMBER(a)) = nums[i-1] {
 			if let ATOM(NUMBER(b)) = nums[i] {
@@ -170,7 +170,7 @@ pub fn greater_than(args: List) -> Result<Datum, LispError> {
 }
 
 pub fn greater_equal(args: List) -> Result<Datum, LispError> {
-	let mut nums = args.get_items();
+	let nums = args.get_items();
 	for i in 1..nums.len() {
 		if let ATOM(NUMBER(a)) = nums[i-1] {
 			if let ATOM(NUMBER(b)) = nums[i] {
@@ -188,7 +188,7 @@ pub fn greater_equal(args: List) -> Result<Datum, LispError> {
 }
 
 pub fn less_than(args: List) -> Result<Datum, LispError> {
-	let mut nums = args.get_items();
+	let nums = args.get_items();
 	for i in 1..nums.len() {
 		if let ATOM(NUMBER(a)) = nums[i-1] {
 			if let ATOM(NUMBER(b)) = nums[i] {
@@ -206,7 +206,7 @@ pub fn less_than(args: List) -> Result<Datum, LispError> {
 }
 
 pub fn less_equal(args: List) -> Result<Datum, LispError> {
-	let mut nums = args.get_items();
+	let nums = args.get_items();
 	for i in 1..nums.len() {
 		if let ATOM(NUMBER(a)) = nums[i-1] {
 			if let ATOM(NUMBER(b)) = nums[i] {
@@ -224,7 +224,7 @@ pub fn less_equal(args: List) -> Result<Datum, LispError> {
 }
 
 pub fn math_equal(args: List) -> Result<Datum, LispError> {
-	let mut nums = args.get_items();
+	let nums = args.get_items();
 	for i in 1..nums.len() {
 		if let ATOM(NUMBER(a)) = nums[i-1] {
 			if let ATOM(NUMBER(b)) = nums[i] {
@@ -242,7 +242,7 @@ pub fn math_equal(args: List) -> Result<Datum, LispError> {
 }
 
 pub fn lisp_mod(args: List) -> Result<Datum, LispError> {
-	let mut nums = args.get_items();
+	let nums = args.get_items();
 	if nums.len() < 2 {
 		return Err(NOT_ENOUGH_ARGUMENTS);
 	} else if nums.len() > 2 {

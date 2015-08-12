@@ -338,6 +338,7 @@ impl List {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[allow(non_camel_case_types)]
 pub enum Native {
 	ADD, SUB, MUL, DIV, MOD,
 	GT, GE, LT, LE, MATH_EQ,
@@ -346,6 +347,7 @@ pub enum Native {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[allow(non_camel_case_types)]
 pub enum Special {
 	IF,
 	LET, LET_STAR,

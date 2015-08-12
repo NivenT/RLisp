@@ -1,4 +1,5 @@
 #[derive(Debug, Clone, PartialEq)]
+#[allow(non_camel_case_types)]
 pub enum LispError {
 	INVALID_ARGUMENT_TYPE,
 	NOT_ENOUGH_ARGUMENTS,
@@ -8,5 +9,6 @@ pub enum LispError {
 	UNKNOWN_FUNCTION,
 	INVALID_ARG_LIST,
 	MISMATCHED_BRACKETS,
-	NOT_YET_IMPLEMENTED
+	NOT_YET_IMPLEMENTED,
+	NO_INPUT
 }
