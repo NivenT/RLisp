@@ -59,7 +59,7 @@ impl Env {
 				return Ok(self.env_stack[len-i-1][key].clone())
 			}
 		}
-		Err(UNBOUND_VARIABLE)
+		Err(UNBOUND_VARIABLE(key.clone()))
 	}
 
 	pub fn set(&mut self, key: String, val: Datum) -> Datum {

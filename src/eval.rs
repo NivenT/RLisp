@@ -15,7 +15,7 @@ pub fn eval(form: &Datum, env: &mut Env) -> Result<Datum, LispError> {
 	match *form {
 		LIST(ref l)	=> eval_list(l, env),
 		ATOM(ref a) => eval_atom(a, env),
-		_			=> Err(INVALID_FORM)
+		ref e @ _	=> Err(INVALID_FORM(e.clone()))
 	}
 }
 
@@ -29,10 +29,10 @@ fn eval_list(form: &List, env: &mut Env) -> Result<Datum, LispError> {
 				FUNCTION(func) 	=> {
 					match *cdr.clone() {
 						LIST(args) 	=> apply(func, args, env),
-						_			=> Err(INVALID_ARG_LIST)
+						_			=> Err(INVALID_ARG_LIST(*cdr.clone()))
 					}
 				},
-				_				=> Err(UNKNOWN_FUNCTION)
+				ref e @ _			=> Err(UNKNOWN_FUNCTION(e.clone()))
 			} 
 		},
 		NIL						=> Ok(LIST(NIL))
@@ -82,7 +82,7 @@ fn apply_native(func: &Native, args: List, env: &mut Env) -> Result<Datum, LispE
 		LE 			=> less_equal(List::from_vec(items)),
 		MATH_EQ     => math_equal(List::from_vec(items)),
 		MOD			=> lisp_mod(List::from_vec(items)),
-		//_			=> Err(NOT_YET_IMPLEMENTED)
+		//_			=> Err(NOT_YET_IMPLEMENTED(FUNCTION(NATIVE(*func))))
 	}
 }
 
@@ -94,7 +94,7 @@ fn apply_special(func: &Special, args: List, env: &mut Env) -> Result<Datum, Lis
 		DEFUN 		=> defun(args, env),
 		QUOTE 		=> quote(args),
 		BACKQUOTE   => backquote(args, env),
-		_			=> Err(NOT_YET_IMPLEMENTED)
+		_			=> Err(NOT_YET_IMPLEMENTED(FUNCTION(SPECIAL(*func))))
 	}
 }
 
@@ -102,9 +102,9 @@ fn apply_lambda(func: &Lambda, args: List, env: &mut Env) -> Result<Datum, LispE
 	let mut params = args.get_items();
 
 	if params.len() < func.args.len() {
-		return Err(NOT_ENOUGH_ARGUMENTS);
+		return Err(NOT_ENOUGH_ARGUMENTS(params.len(), func.args.len()));
 	} else if params.len() > func.args.len() {
-		return Err(TOO_MANY_ARGUMENTS);
+		return Err(TOO_MANY_ARGUMENTS(params.len(), func.args.len()));
 	}
 
 	for i in 0..params.len() {
@@ -129,7 +129,7 @@ fn apply_lambda(func: &Lambda, args: List, env: &mut Env) -> Result<Datum, LispE
 fn define(args: List, env: &mut Env) -> Result<Datum, LispError> {
 	let lst = args.get_items();
 	match lst.len() {
-		0 | 1 => Err(NOT_ENOUGH_ARGUMENTS),
+		e @ 0 |e @ 1 => Err(NOT_ENOUGH_ARGUMENTS(e, 2)),
 		2 => {
 			if let ATOM(SYMBOL(sym)) = lst[0].clone() {
 				let res = eval(&lst[1], env);
@@ -137,15 +137,15 @@ fn define(args: List, env: &mut Env) -> Result<Datum, LispError> {
 					return res;
 				} else {
 					match env.get(&sym) {
-						Ok(FUNCTION(SPECIAL(_))) |
-						Ok(FUNCTION(NATIVE(_))) => return Err(INVALID_ARGUMENT_TYPE),
-						_						=> return Ok(env.set(sym, res.ok().unwrap()))
+						Ok(ref e @ FUNCTION(SPECIAL(_))) |
+						Ok(ref e @ FUNCTION(NATIVE(_))) => return Err(OVERRIDE_RESERVED(e.clone())),
+						_								=> return Ok(env.set(sym, res.ok().unwrap()))
 					}
 				}
 			}
-			Err(INVALID_ARGUMENT_TYPE)
+			Err(INVALID_ARGUMENT_TYPE(lst[0].clone(), "symbol"))
 		},
-		_ => Err(TOO_MANY_ARGUMENTS)
+		e @ _ => Err(TOO_MANY_ARGUMENTS(e, 2))
 	}
 }
 
@@ -159,7 +159,7 @@ fn is_true(cond: Datum) -> bool {
 fn lisp_if(args: List, env: &mut Env) -> Result<Datum, LispError> {
 	let lst = args.get_items();
 	match lst.len() {
-		0 | 1 	=> Err(NOT_ENOUGH_ARGUMENTS),
+		e @ 0 |e @ 1 	=> Err(NOT_ENOUGH_ARGUMENTS(e, 3)),
 		2 | 3 	=> {
 			let res = eval(&lst[0], env);
 			if res.is_err() {
@@ -172,16 +172,16 @@ fn lisp_if(args: List, env: &mut Env) -> Result<Datum, LispError> {
 				Ok(LIST(NIL))
 			}
 		},
-		_	 	=> Err(TOO_MANY_ARGUMENTS)
+		e @ _	 	=> Err(TOO_MANY_ARGUMENTS(e, 3))
 	}
 }
 
 fn lambda(args: List) -> Result<Datum, LispError> {
 	let lst = args.get_items();
 	if lst.len() < 2 {
-		return Err(NOT_ENOUGH_ARGUMENTS);
+		return Err(NOT_ENOUGH_ARGUMENTS(lst.len(), 2));
 	} else if lst.len() > 2 {
-		return Err(TOO_MANY_ARGUMENTS);
+		return Err(TOO_MANY_ARGUMENTS(lst.len(), 2));
 	}
 
 	if let LIST(params) = lst[0].clone() {
@@ -192,23 +192,23 @@ fn lambda(args: List) -> Result<Datum, LispError> {
 			if let ATOM(SYMBOL(name)) = param {
 				args.push(name);
 			} else {
-				return Err(INVALID_ARGUMENT_TYPE);
+				return Err(INVALID_ARGUMENT_TYPE(param, "symbol"));
 			}
 		}
 
 		let func = Lambda{args: args, body: Box::new(lst[1].clone())};
 		return Ok(FUNCTION(LAMBDA(func)));
 	} else {
-		return Err(INVALID_ARGUMENT_TYPE);
+		return Err(INVALID_ARGUMENT_TYPE(lst[0].clone(), "list"));
 	}
 }
 
 fn defun(args: List, env: &mut Env) -> Result<Datum, LispError> {
 	let lst = args.get_items();
 	if lst.len() < 3 {
-		return Err(NOT_ENOUGH_ARGUMENTS);
+		return Err(NOT_ENOUGH_ARGUMENTS(lst.len(), 3));
 	} else if lst.len() > 3 {
-		return Err(TOO_MANY_ARGUMENTS);
+		return Err(TOO_MANY_ARGUMENTS(lst.len(), 3));
 	}
 
 	let lam = lambda(List::from_vec(vec!(lst[1].clone(), lst[2].clone())));
@@ -216,21 +216,21 @@ fn defun(args: List, env: &mut Env) -> Result<Datum, LispError> {
 		return lam;
 	} else if let ATOM(SYMBOL(name)) = lst[0].clone() {
 		match env.get(&name) {
-			Ok(FUNCTION(SPECIAL(_))) |
-			Ok(FUNCTION(NATIVE(_))) => return Err(INVALID_ARGUMENT_TYPE),
-			_						=> return Ok(env.set(name, lam.ok().unwrap()))
+			Ok(ref e @ FUNCTION(SPECIAL(_))) |
+			Ok(ref e @ FUNCTION(NATIVE(_))) => return Err(OVERRIDE_RESERVED(e.clone())),
+			_								=> return Ok(env.set(name, lam.ok().unwrap()))
 		}
 	} else {
-		return Err(INVALID_ARGUMENT_TYPE)
+		return Err(INVALID_ARGUMENT_TYPE(lst[0].clone(), "symbol"))
 	}
 }
 
 fn quote(args: List) -> Result<Datum, LispError> {
 	let lst = args.get_items();
 	if lst.len() < 1 {
-		Err(NOT_ENOUGH_ARGUMENTS)
+		Err(NOT_ENOUGH_ARGUMENTS(lst.len(), 1))
 	} else if lst.len() > 1 {
-		Err(TOO_MANY_ARGUMENTS)
+		Err(TOO_MANY_ARGUMENTS(lst.len(), 1))
 	} else {
 		Ok(lst[0].clone())
 	}
@@ -239,9 +239,9 @@ fn quote(args: List) -> Result<Datum, LispError> {
 fn backquote(args: List, env: &mut Env) -> Result<Datum, LispError> {
 	let lst = args.get_items();
 	if lst.len() < 1 {
-		Err(NOT_ENOUGH_ARGUMENTS)
+		Err(NOT_ENOUGH_ARGUMENTS(lst.len(), 1))
 	} else if lst.len() > 1 {
-		Err(TOO_MANY_ARGUMENTS)
+		Err(TOO_MANY_ARGUMENTS(lst.len(), 1))
 	} else {
 		backquote_helper(&lst[0], env)
 	}
@@ -256,7 +256,7 @@ fn backquote_helper(arg: &Datum, env: &mut Env) -> Result<Datum, LispError> {
 			} else {
 				let mut items = lst.get_items();
 				for i in 0..items.len() {
-					let res = eval(&items[i], env);
+					let res = backquote_helper(&items[i], env);
 					if res.is_err() {
 						return res;
 					} else {

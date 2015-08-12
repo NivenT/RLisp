@@ -12,7 +12,7 @@ pub fn add(args: List) -> Result<Datum, LispError> {
 	for item in args.get_items() {
 		match item {
 			ATOM(NUMBER(n))	=> {sum = sum + n},
-			_				=> return Err(INVALID_ARGUMENT_TYPE)
+			_				=> return Err(INVALID_ARGUMENT_TYPE(item, "number"))
 		}
 	}
 	Ok(ATOM(NUMBER(sum.simplify())))
@@ -31,10 +31,10 @@ pub fn sub(args: List) -> Result<Datum, LispError> {
 			}
 			match res.ok().unwrap() {
 				ATOM(NUMBER(m))	=> Ok(ATOM(NUMBER((n-m).simplify()))),
-				_				=> Err(INVALID_ARGUMENT_TYPE)
+				ref e @ _		=> Err(INVALID_ARGUMENT_TYPE(e.clone(), "number"))
 			}
 		},
-		_				=> Err(INVALID_ARGUMENT_TYPE)
+		_				=> Err(INVALID_ARGUMENT_TYPE(nums[0].clone(), "number"))
 	}
 }
 
@@ -43,7 +43,7 @@ pub fn mul(args: List) -> Result<Datum, LispError> {
 	for item in args.get_items() {
 		match item {
 			ATOM(NUMBER(n))	=> {prd = prd * n},
-			_				=> return Err(INVALID_ARGUMENT_TYPE)
+			_				=> return Err(INVALID_ARGUMENT_TYPE(item, "number"))
 		}
 	}
 	Ok(ATOM(NUMBER(prd.simplify())))
@@ -62,10 +62,10 @@ pub fn div(args: List) -> Result<Datum, LispError> {
 			}
 			match res.ok().unwrap() {
 				ATOM(NUMBER(m))	=> Ok(ATOM(NUMBER((n/m).simplify()))),
-				_				=> Err(INVALID_ARGUMENT_TYPE)
+				ref e @ _		=> Err(INVALID_ARGUMENT_TYPE(e.clone(), "number"))
 			}
 		},
-		_				=> Err(INVALID_ARGUMENT_TYPE)
+		_				=> Err(INVALID_ARGUMENT_TYPE(nums[0].clone(), "number"))
 	}
 }
 
@@ -76,44 +76,44 @@ pub fn list(args: List) -> Result<Datum, LispError> {
 pub fn cons(args: List) -> Result<Datum, LispError> {
 	let lst = args.get_items();
 	match lst.len() {
-		0|1 => Err(NOT_ENOUGH_ARGUMENTS),
-		2 	=> Ok(LIST(CONS(Box::new(lst[0].clone()), Box::new(lst[1].clone())))),
-		_	=> Err(TOO_MANY_ARGUMENTS)
+		e @ 0|e @ 1 => Err(NOT_ENOUGH_ARGUMENTS(e, 2)),
+		2 		=> Ok(LIST(CONS(Box::new(lst[0].clone()), Box::new(lst[1].clone())))),
+		e @ _	=> Err(TOO_MANY_ARGUMENTS(e, 2))
 	}
 }
 
 pub fn car(args: List) -> Result<Datum, LispError> {
 	let lst = args.get_items();
 	match lst.len() {
-		0 => Err(NOT_ENOUGH_ARGUMENTS),
+		0 => Err(NOT_ENOUGH_ARGUMENTS(0, 1)),
 		1 => {
 			match lst[0] {
 				LIST(ref l)	=> Ok(l.car()),
-				_			=> Err(INVALID_ARGUMENT_TYPE)
+				_			=> Err(INVALID_ARGUMENT_TYPE(lst[0].clone(), "list"))
 			}
 		},
-		_ => Err(TOO_MANY_ARGUMENTS)
+		e @ _ => Err(TOO_MANY_ARGUMENTS(e, 1))
 	}
 }
 
 pub fn cdr(args: List) -> Result<Datum, LispError> {
 	let lst = args.get_items();
 	match lst.len() {
-		0 => Err(NOT_ENOUGH_ARGUMENTS),
+		0 => Err(NOT_ENOUGH_ARGUMENTS(0, 1)),
 		1 => {
 			match lst[0] {
 				LIST(ref l)	=> Ok(l.cdr()),
-				_			=> Err(INVALID_ARGUMENT_TYPE)
+				_			=> Err(INVALID_ARGUMENT_TYPE(lst[0].clone(), "list"))
 			}
 		},
-		_ => Err(TOO_MANY_ARGUMENTS)
+		e @ _ => Err(TOO_MANY_ARGUMENTS(e, 1))
 	}	
 }
 
 pub fn nth(args: List) -> Result<Datum, LispError> {
 	let lst = args.get_items();
 	match lst.len() {
-		0 | 1 => Err(NOT_ENOUGH_ARGUMENTS),
+		e @ 0 |e @ 1 => Err(NOT_ENOUGH_ARGUMENTS(e, 2)),
 		2 => {
 			if let ATOM(NUMBER(INTEGER(n))) = lst[0] {
 				let n = n as usize;
@@ -121,19 +121,19 @@ pub fn nth(args: List) -> Result<Datum, LispError> {
 					LIST(ref l)	=> return if l.get_items().len() > n {
 						Ok(l.get_items()[n].clone())
 					} else {Ok(LIST(NIL))},
-					_		=> return Err(INVALID_ARGUMENT_TYPE)
+					_		=> return Err(INVALID_ARGUMENT_TYPE(lst[1].clone(), "list"))
 				}
 			}
-			Err(INVALID_ARGUMENT_TYPE)
+			Err(INVALID_ARGUMENT_TYPE(lst[0].clone(), "integer"))
 		},
-		_ => Err(TOO_MANY_ARGUMENTS)
+		e @ _ => Err(TOO_MANY_ARGUMENTS(e, 2))
 	}
 }
 
 pub fn nth_cdr(args: List) -> Result<Datum, LispError> {
 	let lst = args.get_items();
 	match lst.len() {
-		0 | 1 => Err(NOT_ENOUGH_ARGUMENTS),
+		e @ 0 |e @ 1 => Err(NOT_ENOUGH_ARGUMENTS(e, 2)),
 		2 => {
 			if let ATOM(NUMBER(INTEGER(n))) = lst[0] {
 				let n = n as usize;
@@ -142,12 +142,12 @@ pub fn nth_cdr(args: List) -> Result<Datum, LispError> {
 						Ok(LIST(List::from_vec(
 							l.get_items().into_iter().skip(n).collect())))
 					} else {Ok(LIST(NIL))},
-					_		=> return Err(INVALID_ARGUMENT_TYPE)
+					_		=> return Err(INVALID_ARGUMENT_TYPE(lst[1].clone(), "list"))
 				}
 			}
-			Err(INVALID_ARGUMENT_TYPE)
+			Err(INVALID_ARGUMENT_TYPE(lst[0].clone(), "integer"))
 		},
-		_ => Err(TOO_MANY_ARGUMENTS)
+		e @ _ => Err(TOO_MANY_ARGUMENTS(e, 2))
 	}
 }
 
@@ -160,10 +160,10 @@ pub fn greater_than(args: List) -> Result<Datum, LispError> {
 					return Ok(LIST(NIL));
 				}
 			} else {
-				return Err(INVALID_ARGUMENT_TYPE);
+				return Err(INVALID_ARGUMENT_TYPE(nums[i].clone(), "number"));
 			}
 		} else {
-			return Err(INVALID_ARGUMENT_TYPE);
+			return Err(INVALID_ARGUMENT_TYPE(nums[i-1].clone(), "number"));
 		}
 	}
 	Ok(ATOM(T))
@@ -178,10 +178,10 @@ pub fn greater_equal(args: List) -> Result<Datum, LispError> {
 					return Ok(LIST(NIL));
 				}
 			} else {
-				return Err(INVALID_ARGUMENT_TYPE);
+				return Err(INVALID_ARGUMENT_TYPE(nums[i].clone(), "number"));
 			}
 		} else {
-			return Err(INVALID_ARGUMENT_TYPE);
+			return Err(INVALID_ARGUMENT_TYPE(nums[i-1].clone(), "number"));
 		}
 	}
 	Ok(ATOM(T))
@@ -196,10 +196,10 @@ pub fn less_than(args: List) -> Result<Datum, LispError> {
 					return Ok(LIST(NIL));
 				}
 			} else {
-				return Err(INVALID_ARGUMENT_TYPE);
+				return Err(INVALID_ARGUMENT_TYPE(nums[i].clone(), "number"));
 			}
 		} else {
-			return Err(INVALID_ARGUMENT_TYPE);
+			return Err(INVALID_ARGUMENT_TYPE(nums[i-1].clone(), "number"));
 		}
 	}
 	Ok(ATOM(T))
@@ -214,10 +214,10 @@ pub fn less_equal(args: List) -> Result<Datum, LispError> {
 					return Ok(LIST(NIL));
 				}
 			} else {
-				return Err(INVALID_ARGUMENT_TYPE);
+				return Err(INVALID_ARGUMENT_TYPE(nums[i].clone(), "number"));
 			}
 		} else {
-			return Err(INVALID_ARGUMENT_TYPE);
+			return Err(INVALID_ARGUMENT_TYPE(nums[i-1].clone(), "number"));
 		}
 	}
 	Ok(ATOM(T))
@@ -232,10 +232,10 @@ pub fn math_equal(args: List) -> Result<Datum, LispError> {
 					return Ok(LIST(NIL));
 				}
 			} else {
-				return Err(INVALID_ARGUMENT_TYPE);
+				return Err(INVALID_ARGUMENT_TYPE(nums[i].clone(), "number"));
 			}
 		} else {
-			return Err(INVALID_ARGUMENT_TYPE);
+			return Err(INVALID_ARGUMENT_TYPE(nums[i-1].clone(), "number"));
 		}
 	}
 	Ok(ATOM(T))
@@ -244,9 +244,9 @@ pub fn math_equal(args: List) -> Result<Datum, LispError> {
 pub fn lisp_mod(args: List) -> Result<Datum, LispError> {
 	let nums = args.get_items();
 	if nums.len() < 2 {
-		return Err(NOT_ENOUGH_ARGUMENTS);
+		return Err(NOT_ENOUGH_ARGUMENTS(nums.len(), 2));
 	} else if nums.len() > 2 {
-		return Err(TOO_MANY_ARGUMENTS);
+		return Err(TOO_MANY_ARGUMENTS(nums.len(), 2));
 	}
 
 	if let ATOM(NUMBER(a)) = nums[0] {
@@ -254,9 +254,9 @@ pub fn lisp_mod(args: List) -> Result<Datum, LispError> {
 			return Ok(ATOM(NUMBER(
 					a - b*INTEGER((a/b).val().floor() as i64))));
 		} else {
-			return Err(INVALID_ARGUMENT_TYPE);
+			return Err(INVALID_ARGUMENT_TYPE(nums[1].clone(), "number"));
 		}
 	} else {
-		return Err(INVALID_ARGUMENT_TYPE);
+		return Err(INVALID_ARGUMENT_TYPE(nums[0].clone(), "number"));
 	}
 }

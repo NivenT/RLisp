@@ -60,19 +60,20 @@ fn main() {
 				None			=> {result = Err(LispError::MISMATCHED_BRACKETS); break}
 			}
 		}
-		
+
 		if result != Err(LispError::MISMATCHED_BRACKETS) &&
 		   result != Err(LispError::NO_INPUT) {
 			result = eval(&parse(&mut tokenize(&input)), &mut env)
 		} match result {
 			Ok(ref a) 	=> println!("{}\n", *a),
-			Err(ref a)	=> println!("Error: {:?}\n", *a)
+			Err(ref a)	=> println!("{}\n", a.message())
 		}
-
+		/*
 		println!("Development output:");
 		println!("	tokens: {:?}\n", tokenize(&input));
 		println!("	parsed expression: {}\n", parse(&mut tokenize(&input)));
 		println!("	debug result: {:?}\n", result);
 		println!("\n");
+		*/
 	}
 }
