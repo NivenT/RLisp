@@ -4,8 +4,7 @@ use types::*;
 #[allow(non_camel_case_types)]
 pub enum LispError {
 	INVALID_ARGUMENT_TYPE(Datum, &'static str),
-	NOT_ENOUGH_ARGUMENTS(usize, usize),
-	TOO_MANY_ARGUMENTS(usize, usize),
+	INVALID_NUMBER_OF_ARGS(usize, usize),
 	UNBOUND_VARIABLE(String),
 	INVALID_FORM(Datum),
 	UNKNOWN_FUNCTION(Datum),
@@ -23,10 +22,8 @@ impl LispError {
 		match self.clone() {
 			INVALID_ARGUMENT_TYPE(act, exp) => 
 				format!("Invalid argument: {} should be of type {}", act, exp),
-			NOT_ENOUGH_ARGUMENTS(act, exp) =>
-				format!("Too few arguments: {} provided but {} expected", act, exp),
-			TOO_MANY_ARGUMENTS(act, exp) =>
-				format!("Too many arguments: {} provided but {} expected", act, exp),
+			INVALID_NUMBER_OF_ARGS(act, exp) =>
+				format!("Invalid number of arguments: {} provided but {} expected", act, exp),
 			UNBOUND_VARIABLE(name) =>
 				format!("Unbound variable: No value set for {}", name),
 			INVALID_FORM(x) =>

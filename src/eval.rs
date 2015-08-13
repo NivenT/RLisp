@@ -11,6 +11,8 @@ use types::Datum::*;
 use types::List::*;
 use types::Atom::*;
 
+use std::collections::HashMap;
+
 pub fn eval(form: &Datum, env: &mut Env) -> Result<Datum, LispError> {
 	match *form {
 		LIST(ref l)	=> eval_list(l, env),
@@ -28,7 +30,7 @@ fn eval_list(form: &List, env: &mut Env) -> Result<Datum, LispError> {
 			} match f.ok().unwrap() {
 				FUNCTION(func) 	=> {
 					match *cdr.clone() {
-						LIST(args) 	=> apply(func, args, env),
+						LIST(args) 	=> apply(func, args.get_items(), env),
 						_			=> Err(INVALID_ARG_LIST(*cdr.clone()))
 					}
 				},
@@ -46,7 +48,7 @@ fn eval_atom(form: &Atom, env: &mut Env) -> Result<Datum, LispError> {
 	}
 }
 
-fn apply(func: Function, args: List, env: &mut Env) -> Result<Datum, LispError> {
+fn apply(func: Function, args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 	match func {
 		SPECIAL(ref s)	=> apply_special(s, args, env),
 		NATIVE(ref n)	=> apply_native(n, args, env),
@@ -54,39 +56,39 @@ fn apply(func: Function, args: List, env: &mut Env) -> Result<Datum, LispError> 
 	}
 }
 
-fn apply_native(func: &Native, args: List, env: &mut Env) -> Result<Datum, LispError> {
-	let mut items = args.get_items();
-	for i in 0..items.len() {
-		let res = eval(&items[i], env);
+fn apply_native(func: &Native, args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
+	let mut items: Vec<Datum> = Vec::with_capacity(args.len());
+	for i in 0..args.len() {
+		let res = eval(&args[i], env);
 		if res.is_err() {
 			return res;
 		} else {
-			items[i] = res.ok().unwrap();
+			items.push(res.ok().unwrap());
 		}
 	}
 
 	match *func {
-		ADD			=> add(List::from_vec(items)),
-		SUB			=> sub(List::from_vec(items)),
-		MUL			=> mul(List::from_vec(items)),
-		DIV			=> div(List::from_vec(items)),
-		LIST_FUNC 	=> list(List::from_vec(items)),
-		CONS_FUNC	=> cons(List::from_vec(items)),
-		CAR 		=> car(List::from_vec(items)),
-		CDR			=> cdr(List::from_vec(items)),
-		NTH_CDR		=> nth_cdr(List::from_vec(items)),
-		NTH			=> nth(List::from_vec(items)),
-		GT 			=> greater_than(List::from_vec(items)),
-		GE 			=> greater_equal(List::from_vec(items)),
-		LT 			=> less_than(List::from_vec(items)),
-		LE 			=> less_equal(List::from_vec(items)),
-		MATH_EQ     => math_equal(List::from_vec(items)),
-		MOD			=> lisp_mod(List::from_vec(items)),
+		ADD			=> add(items),
+		SUB			=> sub(items),
+		MUL			=> mul(items),
+		DIV			=> div(items),
+		LIST_FUNC 	=> list(items),
+		CONS_FUNC	=> cons(items),
+		CAR 		=> car(items),
+		CDR			=> cdr(items),
+		NTH_CDR		=> nth_cdr(items),
+		NTH			=> nth(items),
+		GT 			=> greater_than(items),
+		GE 			=> greater_equal(items),
+		LT 			=> less_than(items),
+		LE 			=> less_equal(items),
+		MATH_EQ     => math_equal(items),
+		MOD			=> lisp_mod(items),
 		//_			=> Err(NOT_YET_IMPLEMENTED(FUNCTION(NATIVE(*func))))
 	}
 }
 
-fn apply_special(func: &Special, args: List, env: &mut Env) -> Result<Datum, LispError> {
+fn apply_special(func: &Special, args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 	match *func {
 		DEFINE		=> define(args, env),
 		IF 			=> lisp_if(args, env),
@@ -94,25 +96,24 @@ fn apply_special(func: &Special, args: List, env: &mut Env) -> Result<Datum, Lis
 		DEFUN 		=> defun(args, env),
 		QUOTE 		=> quote(args),
 		BACKQUOTE   => backquote(args, env),
+		LET 		=> let_lisp(args, env),
+		LET_STAR 	=> let_star(args, env),
 		_			=> Err(NOT_YET_IMPLEMENTED(FUNCTION(SPECIAL(*func))))
 	}
 }
 
-fn apply_lambda(func: &Lambda, args: List, env: &mut Env) -> Result<Datum, LispError> {
-	let mut params = args.get_items();
-
-	if params.len() < func.args.len() {
-		return Err(NOT_ENOUGH_ARGUMENTS(params.len(), func.args.len()));
-	} else if params.len() > func.args.len() {
-		return Err(TOO_MANY_ARGUMENTS(params.len(), func.args.len()));
+fn apply_lambda(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
+	if args.len() != func.args.len() {
+		return Err(INVALID_NUMBER_OF_ARGS(args.len(), func.args.len()));
 	}
 
-	for i in 0..params.len() {
-		let res = eval(&params[i], env);
+	let mut params: Vec<Datum> = Vec::with_capacity(args.len());
+	for i in 0..args.len() {
+		let res = eval(&args[i], env);
 		if res.is_err() {
 			return res;
 		} else {
-			params[i] = res.ok().unwrap();
+			params.push(res.ok().unwrap());
 		}
 	}
 
@@ -126,13 +127,11 @@ fn apply_lambda(func: &Lambda, args: List, env: &mut Env) -> Result<Datum, LispE
 	return res;
 }
 
-fn define(args: List, env: &mut Env) -> Result<Datum, LispError> {
-	let lst = args.get_items();
-	match lst.len() {
-		e @ 0 |e @ 1 => Err(NOT_ENOUGH_ARGUMENTS(e, 2)),
+fn define(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
+	match args.len() {
 		2 => {
-			if let ATOM(SYMBOL(sym)) = lst[0].clone() {
-				let res = eval(&lst[1], env);
+			if let ATOM(SYMBOL(sym)) = args[0].clone() {
+				let res = eval(&args[1], env);
 				if res.is_err() {
 					return res;
 				} else {
@@ -143,9 +142,9 @@ fn define(args: List, env: &mut Env) -> Result<Datum, LispError> {
 					}
 				}
 			}
-			Err(INVALID_ARGUMENT_TYPE(lst[0].clone(), "symbol"))
+			Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "symbol"))
 		},
-		e @ _ => Err(TOO_MANY_ARGUMENTS(e, 2))
+		e @ _ => Err(INVALID_NUMBER_OF_ARGS(e, 2))
 	}
 }
 
@@ -156,94 +155,80 @@ fn is_true(cond: Datum) -> bool {
 	}
 }
 
-fn lisp_if(args: List, env: &mut Env) -> Result<Datum, LispError> {
-	let lst = args.get_items();
-	match lst.len() {
-		e @ 0 |e @ 1 	=> Err(NOT_ENOUGH_ARGUMENTS(e, 3)),
+fn lisp_if(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
+	match args.len() {
 		2 | 3 	=> {
-			let res = eval(&lst[0], env);
+			let res = eval(&args[0], env);
 			if res.is_err() {
 				res
 			} else if is_true(res.ok().unwrap()) {
-				eval(&lst[1], env)
-			} else if lst.len() == 3 {
-				eval(&lst[2], env)
+				eval(&args[1], env)
+			} else if args.len() == 3 {
+				eval(&args[2], env)
 			} else {
 				Ok(LIST(NIL))
 			}
 		},
-		e @ _	 	=> Err(TOO_MANY_ARGUMENTS(e, 3))
+		e @ _	=> Err(INVALID_NUMBER_OF_ARGS(e, 3))
 	}
 }
 
-fn lambda(args: List, env: &mut Env) -> Result<Datum, LispError> {
-	let lst = args.get_items();
-	if lst.len() < 2 {
-		return Err(NOT_ENOUGH_ARGUMENTS(lst.len(), 2));
-	} else if lst.len() > 2 {
-		return Err(TOO_MANY_ARGUMENTS(lst.len(), 2));
-	}
+fn lambda(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
+	if args.len() != 2 {
+		return Err(INVALID_NUMBER_OF_ARGS(args.len(), 2));
+	} 
 
-	if let LIST(params) = lst[0].clone() {
-		let mut args: Vec<String> = vec![];
+	if let LIST(params) = args[0].clone() {
+		let mut arguments: Vec<String> = vec![];
 		let params = params.get_items();
 
 		for param in params {
 			if let ATOM(SYMBOL(name)) = param {
-				args.push(name);
+				arguments.push(name);
 			} else {
 				return Err(INVALID_ARGUMENT_TYPE(param, "symbol"));
 			}
 		}
 
-		let func = Lambda{args: args, body: Box::new(lst[1].clone()), env: env.top()};
+		let func = Lambda{args: arguments, body: Box::new(args[1].clone()), env: env.top()};
 		return Ok(FUNCTION(LAMBDA(func)));
 	} else {
-		return Err(INVALID_ARGUMENT_TYPE(lst[0].clone(), "list"));
+		return Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "list"));
 	}
 }
 
-fn defun(args: List, env: &mut Env) -> Result<Datum, LispError> {
-	let lst = args.get_items();
-	if lst.len() < 3 {
-		return Err(NOT_ENOUGH_ARGUMENTS(lst.len(), 3));
-	} else if lst.len() > 3 {
-		return Err(TOO_MANY_ARGUMENTS(lst.len(), 3));
-	}
+fn defun(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
+	if args.len() != 3 {
+		return Err(INVALID_NUMBER_OF_ARGS(args.len(), 3));
+	} 
 
-	let lam = lambda(List::from_vec(vec!(lst[1].clone(), lst[2].clone())), env);
+	let lam = lambda(vec!(args[1].clone(), args[2].clone()), env);
 	if lam.is_err() {
 		return lam;
-	} else if let ATOM(SYMBOL(name)) = lst[0].clone() {
+	} else if let ATOM(SYMBOL(name)) = args[0].clone() {
 		match env.get(&name) {
 			Ok(ref e @ FUNCTION(SPECIAL(_))) |
 			Ok(ref e @ FUNCTION(NATIVE(_))) => return Err(OVERRIDE_RESERVED(e.clone())),
 			_								=> return Ok(env.set(name, lam.ok().unwrap()))
 		}
 	} else {
-		return Err(INVALID_ARGUMENT_TYPE(lst[0].clone(), "symbol"))
+		return Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "symbol"))
 	}
 }
 
-fn quote(args: List) -> Result<Datum, LispError> {
-	let lst = args.get_items();
-	if lst.len() < 1 {
-		Err(NOT_ENOUGH_ARGUMENTS(lst.len(), 1))
-	} else if lst.len() > 1 {
-		Err(TOO_MANY_ARGUMENTS(lst.len(), 1))
-	} else {
-		Ok(lst[0].clone())
+fn quote(args: Vec<Datum>) -> Result<Datum, LispError> {
+	if args.len() != 1 {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
+	}  else {
+		Ok(args[0].clone())
 	}
 }
 
-fn backquote(args: List, env: &mut Env) -> Result<Datum, LispError> {
-	let lst = args.get_items();
-	if lst.len() < 1 {
-		Err(NOT_ENOUGH_ARGUMENTS(lst.len(), 1))
-	} else if lst.len() > 1 {
-		Err(TOO_MANY_ARGUMENTS(lst.len(), 1))
+fn backquote(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
+	if args.len() != 1 {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
 	} else {
-		backquote_helper(&lst[0], env)
+		backquote_helper(&args[0], env)
 	}
 }
 
@@ -267,5 +252,80 @@ fn backquote_helper(arg: &Datum, env: &mut Env) -> Result<Datum, LispError> {
 				Ok(LIST(List::from_vec(items)))
 			}
 		}
+	}
+}
+
+fn let_lisp(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
+	if args.len() != 2 {
+		return Err(INVALID_NUMBER_OF_ARGS(args.len(), 2));
+	}
+
+	if let LIST(ref lst) = args[0] {
+		let mut map: HashMap<String, Datum> = HashMap::new();
+		for item in lst.get_items() {
+			if let LIST(lst) = item {
+				let binding = lst.get_items();
+				if binding.len() != 2 {
+					return Err(INVALID_ARGUMENT_TYPE(LIST(lst), "list of length 2"))
+				}
+
+				if let ATOM(SYMBOL(ref name)) = binding[0] {
+					let res = eval(&binding[1], env);
+					if res.is_err() {
+						return res;
+					} else {
+						map.insert(name.clone(), res.ok().unwrap());
+					}
+				} else {
+					return Err(INVALID_ARGUMENT_TYPE(binding[0].clone(), "symbol"))
+				}
+			} else {
+				return Err(INVALID_ARGUMENT_TYPE(item, "list"))
+			}
+		}
+
+		env.push_map(&map);
+		let res = eval(&args[1], env);
+		env.pop();
+		res
+	} else {
+		Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "list"))
+	}
+}
+
+fn let_star(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
+	if args.len() != 2 {
+		return Err(INVALID_NUMBER_OF_ARGS(args.len(), 2));
+	}
+
+	if let LIST(ref lst) = args[0] {
+		env.push();
+		for item in lst.get_items() {
+			if let LIST(lst) = item {
+				let binding = lst.get_items();
+				if binding.len() != 2 {
+					return Err(INVALID_ARGUMENT_TYPE(LIST(lst), "list of length 2"))
+				}
+
+				if let ATOM(SYMBOL(ref name)) = binding[0] {
+					let res = eval(&binding[1], env);
+					if res.is_err() {
+						return res;
+					} else {
+						env.set(name.clone(), res.ok().unwrap());
+					}
+				} else {
+					return Err(INVALID_ARGUMENT_TYPE(binding[0].clone(), "symbol"))
+				}
+			} else {
+				return Err(INVALID_ARGUMENT_TYPE(item, "list"))
+			}
+		}
+
+		let res = eval(&args[1], env);
+		env.pop();
+		res
+	} else {
+		Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "list"))
 	}
 }
