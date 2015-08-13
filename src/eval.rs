@@ -1,3 +1,4 @@
+use parser::*;
 use errors::*;
 use native::*;
 use types::*;
@@ -11,6 +12,8 @@ use types::Datum::*;
 use types::List::*;
 use types::Atom::*;
 
+use std::io::prelude::*;
+use std::fs::File;
 use std::collections::HashMap;
 
 pub fn eval(form: &Datum, env: &mut Env) -> Result<Datum, LispError> {
@@ -84,6 +87,7 @@ fn apply_native(func: &Native, args: Vec<Datum>, env: &mut Env) -> Result<Datum,
 		LE 			=> less_equal(items),
 		MATH_EQ     => math_equal(items),
 		MOD			=> lisp_mod(items),
+		LOAD 		=> load(items, env),
 		//_			=> Err(NOT_YET_IMPLEMENTED(FUNCTION(NATIVE(*func))))
 	}
 }
@@ -98,7 +102,8 @@ fn apply_special(func: &Special, args: Vec<Datum>, env: &mut Env) -> Result<Datu
 		BACKQUOTE   => backquote(args, env),
 		LET 		=> let_lisp(args, env),
 		LET_STAR 	=> let_star(args, env),
-		_			=> Err(NOT_YET_IMPLEMENTED(FUNCTION(SPECIAL(*func))))
+		PROGN 		=> progn(args, env),
+		//_			=> Err(NOT_YET_IMPLEMENTED(FUNCTION(SPECIAL(*func))))
 	}
 }
 
@@ -327,5 +332,33 @@ fn let_star(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 		res
 	} else {
 		Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "list"))
+	}
+}
+
+fn progn(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
+	let mut res = Ok(LIST(NIL));
+	for item in args {
+		res = eval(&item, env);
+		if res.is_err() {
+			return res;
+		}
+	}
+	res
+}
+
+pub fn load(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
+	if args.len() != 1 {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
+	} else if let ATOM(STRING(ref file_path)) = args[0] {
+		let mut file = match File::open(file_path.clone()) {
+			Ok(f) 		=> f,
+			Err(why) 	=> return Err(CANNOT_OPEN_FILE(format!("{}", why)))
+		};
+		let mut contents = String::new();
+
+		file.read_to_string(&mut contents).ok().expect("Failed read file to string");
+		eval(&parse(&mut tokenize(&format!("(progn {})", contents))), env)
+	} else {
+		Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "string"))
 	}
 }

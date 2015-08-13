@@ -344,7 +344,8 @@ pub enum Native {
 	ADD, SUB, MUL, DIV, MOD,
 	GT, GE, LT, LE, MATH_EQ,
 	LIST_FUNC, CAR, CDR, CONS_FUNC,
-	NTH, NTH_CDR
+	NTH, NTH_CDR,
+	LOAD
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

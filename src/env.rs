@@ -6,7 +6,6 @@ use types::Function::*;
 use types::Special::*;
 use types::Native::*;
 use types::Datum::*;
-use types::List::*;
 
 use std::collections::HashMap;
 
@@ -37,6 +36,8 @@ impl Env {
 		map.insert("NTHCDR".to_string(), FUNCTION(NATIVE(NTH_CDR)));
 		map.insert("NTH".to_string(), FUNCTION(NATIVE(NTH)));
 
+		map.insert("LOAD".to_string(), FUNCTION(NATIVE(LOAD)));
+
 		map.insert("IF".to_string(), FUNCTION(SPECIAL(IF)));
 		map.insert("LET".to_string(), FUNCTION(SPECIAL(LET)));
 		map.insert("LET*".to_string(), FUNCTION(SPECIAL(LET_STAR)));
@@ -46,8 +47,6 @@ impl Env {
 		map.insert("DEFINE".to_string(), FUNCTION(SPECIAL(DEFINE)));
 		map.insert("DEFUN".to_string(), FUNCTION(SPECIAL(DEFUN)));
 		map.insert("LAMBDA".to_string(), FUNCTION(SPECIAL(LAMBDA_FUNC)));
-
-		map.insert("NIL".to_string(), LIST(NIL));
 
 		Env{env_stack: vec![map, HashMap::new()]}
 	}

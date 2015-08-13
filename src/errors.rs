@@ -9,8 +9,9 @@ pub enum LispError {
 	INVALID_FORM(Datum),
 	UNKNOWN_FUNCTION(Datum),
 	INVALID_ARG_LIST(Datum),
-	NOT_YET_IMPLEMENTED(Datum),
 	OVERRIDE_RESERVED(Datum),
+	CANNOT_OPEN_FILE(String),
+	_NOT_YET_IMPLEMENTED(Datum),
 	MISMATCHED_BRACKETS,
 	NO_INPUT
 }
@@ -32,10 +33,12 @@ impl LispError {
 				format!("Unkown function: {} is not a known function or lambda expression", x),
 			INVALID_ARG_LIST(lst) =>
 				format!("Invalid arguments: {} should be a list", lst),
-			NOT_YET_IMPLEMENTED(x) =>
-				format!("{} has not been implemented yet", x),
+			CANNOT_OPEN_FILE(reason) =>
+				format!("Cannot open file: {}", reason),
 			OVERRIDE_RESERVED(x) =>
 				format!("Attempted to override reserved symbol: {}", x),
+			_NOT_YET_IMPLEMENTED(x) =>
+				format!("{} has not been implemented yet", x),
 			MISMATCHED_BRACKETS =>
 				format!("Attempted to close a parenthesis with a square bracket or vice versa"),
 			NO_INPUT =>

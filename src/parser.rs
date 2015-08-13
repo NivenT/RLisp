@@ -22,7 +22,7 @@ fn atomize(tkn: String) -> Atom {
 		   	NUMBER(RATIONAL(nums[0].parse::<i64>().unwrap(),
 		   					nums[1].parse::<i64>().unwrap()).simplify())
 		} else {SYMBOL(tkn)}
-	} else if tkn.to_uppercase() == "T".to_string() {
+	} else if tkn.to_uppercase() == "T" {
 		T
 	} else {
 		SYMBOL(tkn.to_uppercase())
@@ -62,24 +62,20 @@ pub fn parse(tkns: &mut Vec<Atom>) -> Datum {
 					Box::new(LIST(CONS(
 						Box::new(parse(tkns)),
 						Box::new(LIST(NIL)))))))
-
-
 			} else if s=="`" {
 				LIST(CONS(
 					Box::new(ATOM(SYMBOL("BACKQUOTE".to_string()))),
 					Box::new(LIST(CONS(
 						Box::new(parse(tkns)),
 						Box::new(LIST(NIL)))))))
-
-
 			} else if s=="," {
 				LIST(CONS(
 					Box::new(ATOM(SYMBOL("COMMA".to_string()))),
 					Box::new(LIST(CONS(
 						Box::new(parse(tkns)),
 						Box::new(LIST(NIL)))))))
-
-
+			} else if s=="NIL" {
+				LIST(NIL)
 			} else {
 				ATOM(SYMBOL(s))
 			}
