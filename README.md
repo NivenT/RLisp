@@ -7,7 +7,7 @@ This project is a redo of my Math-Lisp repository. The code in that repositiory 
 Install [Rust](https://www.rust-lang.org/) and then navigate to the src directory in command prompt (or terminal). Then run "cargo build" and the project should be built for you. To then run it either type "cargo run" into command prompt or navigate to the created application file.
 
 ## How to Use
-Because this is a Lisp Interpreter, it makes use of a REPL. Enter your command and hit enter to see the result. Afterwards, repeat.
+Because this is a Lisp Interpreter, it makes use of a REPL. Enter your command and hit enter to see the result. Afterwards, repeat. Press Ctrl+c to quit.
 
 ## Native Functions/Special Forms
 Function | Description | Example input | Corresponding output
@@ -26,12 +26,17 @@ lambda | creates an anonymous function | ((lambda (x y) (+ x y)) 4 3) | 7
 defun | shorthand for a combination of define and lambda | (defun add (x y) (+ x y)) / (add 10 22) | 32
 ' or quote | returns the input unevaluated | '(1 2 3) | (1 2 3)
 \` or backquote | returns the input, only evaluating expressions after commas | \`(1 2 ,(+ 1 2)) | (1 2 3)
+let | creates temporary variables and evaluates an expression | (let ((a 2) (b 4)) (+ a b)) | 6
+let* | sames as let but variables can be defined in terms of previous variables | (let* ((a 2) (b (+ a 2))) (+ a b)) | 6
+progn | evaluates multiple forms, returning the last one | (progn (define x 1) (define x (* 2 x)) x) | 2
+load | opens a file, wraps contents in progn, and evaluates | sample.txt: (defun abs (n) ((if (> n 0) + -) n)) (abs -4)) REPL: (load "sample.txt") | 4
 * / is used to separate different inputs
 
 ## TODO (in no particular order)
 - [ ] Add more native functions
-- [ ] Add special forms
+- [X] Add special forms
 - [ ] Add macros
 - [X] Allow user to modify environment
 - [X] Add quote and backquote
 - [X] Make error messages more helpful
+- [ ] Add functions written in RLisp
