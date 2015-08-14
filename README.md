@@ -9,7 +9,7 @@ Install [Rust](https://www.rust-lang.org/) and then navigate to the src director
 ## How to Use
 Because this is a Lisp Interpreter, it makes use of a REPL. Enter your command and hit enter to see the result. Afterwards, repeat. Press Ctrl+c to quit.
 
-## Native Functions/Special Forms
+## Native Functions/Special Forms (Incomplete list)
 Function | Description | Example input | Corresponding output
 --- | --- | --- | ---
 +,-,*,/ | Basic math functions | (* (+ 19 (- 5 4)) (/ 2 4)) | 10
@@ -33,10 +33,11 @@ load | opens a file, wraps contents in progn, and evaluates | sample.txt: (defun
 * / is used to separate different inputs
 
 ## TODO (in no particular order)
-- [ ] Add more native functions
+- [X] Add more native functions
 - [X] Add special forms
 - [ ] Add macros
 - [X] Allow user to modify environment
 - [X] Add quote and backquote
 - [X] Make error messages more helpful
-- [ ] Add functions written in RLisp
+- [X] Add functions written in RLisp
+- [ ] Improve speed
