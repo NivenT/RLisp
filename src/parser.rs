@@ -32,7 +32,7 @@ fn atomize(tkn: String) -> Atom {
 fn str_replace(s: &String, reps: Vec<(&str, &str)>) -> String {
 	let mut ret = s.clone();
 	for r in reps {
-		ret = ret.replace(r.0, r.1)
+		ret = ret.replace(r.0, r.1);
 	}
 	ret
 }

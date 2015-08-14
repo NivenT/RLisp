@@ -1,7 +1,9 @@
+use parser::*;
 use errors::*;
 use types::*;
 
 use errors::LispError::*;
+use types::Function::*;
 use types::Number::*;
 use types::Datum::*;
 use types::List::*;
@@ -212,7 +214,7 @@ pub fn math_equal(args: Vec<Datum>) -> Result<Datum, LispError> {
 	for i in 1..args.len() {
 		if let ATOM(NUMBER(a)) = args[i-1] {
 			if let ATOM(NUMBER(b)) = args[i] {
-				if a != b {
+				if a.simplify() != b.simplify() && a.val() != b.val() {
 					return Ok(LIST(NIL));
 				}
 			} else {
@@ -239,5 +241,179 @@ pub fn lisp_mod(args: Vec<Datum>) -> Result<Datum, LispError> {
 		}
 	} else {
 		return Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "number"));
+	}
+}
+
+pub fn powi(args: Vec<Datum>) -> Result<Datum, LispError> {
+	if args.len() != 2 {
+		return Err(INVALID_NUMBER_OF_ARGS(args.len(), 2));
+	}
+
+	if let ATOM(NUMBER(a)) = args[0] {
+		if let ATOM(NUMBER(INTEGER(b))) = args[1] {
+			Ok(ATOM(NUMBER(REAL(
+				a.val().powi(b as i32)).simplify())))
+		} else {
+			Err(INVALID_ARGUMENT_TYPE(args[1].clone(), "integer"))
+		}
+	} else {
+		Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "number"))
+	}
+}
+
+pub fn powr(args: Vec<Datum>) -> Result<Datum, LispError> {
+	if args.len() != 2 {
+		return Err(INVALID_NUMBER_OF_ARGS(args.len(), 2));
+	}
+
+	if let ATOM(NUMBER(a)) = args[0] {
+		if let ATOM(NUMBER(b)) = args[1] {
+			Ok(ATOM(NUMBER(REAL(
+				a.val().powf(b.val())).simplify())))
+		} else {
+			Err(INVALID_ARGUMENT_TYPE(args[1].clone(), "number"))
+		}
+	} else {
+		Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "number"))
+	}
+}
+
+pub fn floor(args: Vec<Datum>) -> Result<Datum, LispError> {
+	if args.len() != 1 {
+		return Err(INVALID_NUMBER_OF_ARGS(args.len(), 1));
+	}
+
+	if let ATOM(NUMBER(a)) = args[0] {
+		Ok(ATOM(NUMBER(REAL(a.val().floor()).simplify())))
+	} else {
+		Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "number"))
+	}
+}
+
+pub fn ceil(args: Vec<Datum>) -> Result<Datum, LispError> {
+	if args.len() != 1 {
+		return Err(INVALID_NUMBER_OF_ARGS(args.len(), 1));
+	}
+
+	if let ATOM(NUMBER(a)) = args[0] {
+		Ok(ATOM(NUMBER(REAL(a.val().ceil()).simplify())))
+	} else {
+		Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "number"))
+	}
+}
+
+pub fn type_lisp(args: Vec<Datum>) -> Result<Datum, LispError> {
+	if args.len() != 1 {
+		return Err(INVALID_NUMBER_OF_ARGS(args.len(), 1));
+	}
+
+	match args[0] {
+		ATOM(SYMBOL(_)) 			=> Ok(ATOM(SYMBOL("SYMBOL".to_string()))),
+		ATOM(STRING(_)) 			=> Ok(ATOM(SYMBOL("STRING".to_string()))),
+		ATOM(NUMBER(RATIONAL(..)))	=> Ok(ATOM(SYMBOL("RATIONAL".to_string()))),
+		ATOM(NUMBER(INTEGER(_)))	=> Ok(ATOM(SYMBOL("INTEGER".to_string()))),
+		ATOM(NUMBER(REAL(_)))		=> Ok(ATOM(SYMBOL("REAL".to_string()))),
+		ATOM(T)						=> Ok(ATOM(SYMBOL("BOOLEAN".to_string()))),
+		LIST(CONS(..))				=> Ok(ATOM(SYMBOL("CONS".to_string()))),
+		LIST(NIL)					=> Ok(ATOM(SYMBOL("NULL".to_string()))),
+		FUNCTION(SPECIAL(_))		=> Ok(ATOM(SYMBOL("SPECIAL FUNCTION".to_string()))),
+		FUNCTION(NATIVE(_))			=> Ok(ATOM(SYMBOL("NATIVE FUNCTION".to_string()))),
+		FUNCTION(LAMBDA(_))			=> Ok(ATOM(SYMBOL("LAMBDA EXPRESSION".to_string())))
+	}
+}
+
+pub fn is_atom(args: Vec<Datum>) -> Result<Datum, LispError> {
+	if args.len() != 1 {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
+	} else if let ATOM(_) = args[0] {
+		Ok(ATOM(T))
+	} else if let LIST(NIL) = args[0] {
+		Ok(ATOM(T))
+	} else {
+		Ok(LIST(NIL))
+	}
+}
+
+pub fn is_list(args: Vec<Datum>) -> Result<Datum, LispError> {
+	if args.len() != 1 {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
+	} else if let LIST(_) = args[0] {
+		Ok(ATOM(T))
+	} else {
+		Ok(LIST(NIL))
+	}
+}
+
+pub fn is_cons(args: Vec<Datum>) -> Result<Datum, LispError> {
+	if args.len() != 1 {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
+	} else if let LIST(CONS(..)) = args[0] {
+		Ok(ATOM(T))
+	} else {
+		Ok(LIST(NIL))
+	}
+}
+
+pub fn is_symbol(args: Vec<Datum>) -> Result<Datum, LispError> {
+	if args.len() != 1 {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
+	} else if let ATOM(SYMBOL(_)) = args[0] {
+		Ok(ATOM(T))
+	} else if let LIST(NIL) = args[0] {
+		Ok(ATOM(T))
+	} else {
+		Ok(LIST(NIL))
+	}
+}
+
+pub fn equal(args: Vec<Datum>) -> Result<Datum, LispError> {
+	if args.len() != 2 {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 2))
+	} else if args[0] == args[1] {
+		Ok(ATOM(T))
+	} else if math_equal(args) == Ok(ATOM(T)) {
+		Ok(ATOM(T))
+	} else {
+		Ok(LIST(NIL))
+	}
+}
+
+pub fn write_to_string(args: Vec<Datum>) -> Result<Datum, LispError> {
+	if args.len() != 1 {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
+	} else {
+		Ok(ATOM(STRING(format!("{}", args[0]))))
+	}
+}
+
+pub fn read_from_string(args: Vec<Datum>) -> Result<Datum, LispError> {
+	if args.len() != 1 {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
+	} else if let ATOM(STRING(ref s)) = args[0] {
+		Ok(parse(&mut tokenize(s)))
+	} else {
+		Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "string"))
+	}
+}
+
+pub fn string_concat(args: Vec<Datum>) -> Result<Datum, LispError> {
+	let mut ret = String::new();
+	for arg in args {
+		if let ATOM(STRING(s)) = arg {
+			ret.push_str(s.as_ref());
+		} else {
+			return Err(INVALID_ARGUMENT_TYPE(arg, "string"));
+		}
+	}
+	Ok(ATOM(STRING(ret)))
+}
+
+pub fn not(args: Vec<Datum>) -> Result<Datum, LispError> {
+	if args.len() != 1 {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
+	} else if args[0] == LIST(NIL) {
+		Ok(ATOM(T))
+	} else {
+		Ok(LIST(NIL))
 	}
 }

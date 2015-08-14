@@ -37,6 +37,7 @@ fn main() {
 	let mut result: Result<Datum, LispError>;
 	let mut env = Env::new();
 
+	eval(&parse(&mut tokenize(&"(load \"std.rlisp\")".to_string())), &mut env);
 	loop {
 		input.clear();
 		result =  Ok(Datum::LIST(List::NIL));
@@ -61,7 +62,6 @@ fn main() {
 				None			=> {result = Err(LispError::MISMATCHED_BRACKETS); break}
 			}
 		}
-
 		if result != Err(LispError::MISMATCHED_BRACKETS) &&
 		   result != Err(LispError::NO_INPUT) {
 			result = eval(&parse(&mut tokenize(&input)), &mut env)

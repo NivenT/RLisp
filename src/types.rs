@@ -210,6 +210,8 @@ fn gcd(a: i64, b: i64) -> i64 {
 	}
 }
 
+use std::i64;
+
 impl Number {
 	pub fn simplify(&self) -> Number {
 		match *self {
@@ -223,6 +225,8 @@ impl Number {
 					RATIONAL(a/d, b/d)
 				}
 			},
+			REAL(a) if a == a.floor() && a <= i64::MAX as f64 => 
+				INTEGER(a as i64),
 			e @ _			=> e
 		}
 	}
@@ -340,12 +344,19 @@ impl List {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[allow(non_camel_case_types)]
+//Some of the following functions can be implemented in RLisp instead of Rust
 pub enum Native {
-	ADD, SUB, MUL, DIV, MOD,
+	ADD, SUB, MUL, DIV, MOD, POWI, POWR,
 	GT, GE, LT, LE, MATH_EQ,
 	LIST_FUNC, CAR, CDR, CONS_FUNC,
 	NTH, NTH_CDR,
-	LOAD
+	LOAD,
+	FLOOR, CEIL,
+	TYPE,
+	IS_ATOM, IS_LIST, IS_CONS, IS_SYMBOL,
+	EQUAL,
+	WRITE_TO_STRING, READ_FROM_STRING, STRING_CONCAT,
+	NOT
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

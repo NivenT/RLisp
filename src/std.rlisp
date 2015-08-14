@@ -1,0 +1,38 @@
+(defun abs [n] ((if (> n 0) + -) n))
+(defun fact [n] (if (<= n 1) 1 (* n (fact (- n 1)))))
+(defun round [n] (if (>= (- n (floor n)) .5) (ceil n) (floor n)))
+(defun null [lst] (equal lst nil))
+(defun 1+ [n] (+ n 1))
+(defun 1- [n] (- n 1))
+(defun length [lst] (if (null lst) 0 (1+ (length (cdr lst)))))
+(defun join [lst1 lst2] 
+	(if (null lst1) 
+		lst2 
+		(cons (car lst1) (join (cdr lst1) lst2))))
+(defun append [lst1 item] (join lst1 (list item)))
+(defun member [elem lst]
+	(if (null lst)
+		nil
+		(if (equal (car lst) elem)
+			t
+			(member (cdr lst) elem))))
+(defun assoc [elem lst]
+	(if (null lst)
+		nil
+		(if (equal (car (car lst)) elem)
+			(cdr (car lst))
+			(member (cdr lst) elem))))
+(defun map [func lst]
+	(if (null lst)
+		nil
+		(cons (func (car lst)) (map func (cdr lst)))))
+(defun filter [pred lst]
+	(if (null lst)
+		nil
+		(if (pred (car lst))
+			(cons (car lst) (filter pred (cdr lst)))
+			(filter pred (cdr lst)))))
+(defun range [min max step]
+	(if (>= min max)
+		nil
+		(cons min (range (+ min step) max step))))

@@ -71,24 +71,38 @@ fn apply_native(func: &Native, args: Vec<Datum>, env: &mut Env) -> Result<Datum,
 	}
 
 	match *func {
-		ADD			=> add(items),
-		SUB			=> sub(items),
-		MUL			=> mul(items),
-		DIV			=> div(items),
-		LIST_FUNC 	=> list(items),
-		CONS_FUNC	=> cons(items),
-		CAR 		=> car(items),
-		CDR			=> cdr(items),
-		NTH_CDR		=> nth_cdr(items),
-		NTH			=> nth(items),
-		GT 			=> greater_than(items),
-		GE 			=> greater_equal(items),
-		LT 			=> less_than(items),
-		LE 			=> less_equal(items),
-		MATH_EQ     => math_equal(items),
-		MOD			=> lisp_mod(items),
-		LOAD 		=> load(items, env),
-		//_			=> Err(NOT_YET_IMPLEMENTED(FUNCTION(NATIVE(*func))))
+		ADD					=> add(items),
+		SUB					=> sub(items),
+		MUL					=> mul(items),
+		DIV					=> div(items),
+		LIST_FUNC 			=> list(items),
+		CONS_FUNC			=> cons(items),
+		CAR 				=> car(items),
+		CDR					=> cdr(items),
+		NTH_CDR				=> nth_cdr(items),
+		NTH					=> nth(items),
+		GT 					=> greater_than(items),
+		GE 					=> greater_equal(items),
+		LT 					=> less_than(items),
+		LE 					=> less_equal(items),
+		MATH_EQ     		=> math_equal(items),
+		MOD					=> lisp_mod(items),
+		LOAD 				=> load(items, env),
+		POWI				=> powi(items),
+		POWR				=> powr(items),
+		FLOOR  				=> floor(items),
+		CEIL 				=> ceil(items),
+		TYPE 				=> type_lisp(items),
+		IS_ATOM				=> is_atom(items),
+		IS_LIST				=> is_list(items),
+		IS_CONS				=> is_cons(items),
+		IS_SYMBOL			=> is_symbol(items),
+		EQUAL 				=> equal(items),
+		WRITE_TO_STRING 	=> write_to_string(items),
+		READ_FROM_STRING 	=> read_from_string(items),
+		STRING_CONCAT		=> string_concat(items),
+		NOT 				=> not(items),
+		//_					=> Err(_NOT_YET_IMPLEMENTED(FUNCTION(NATIVE(*func))))
 	}
 }
 
@@ -103,7 +117,7 @@ fn apply_special(func: &Special, args: Vec<Datum>, env: &mut Env) -> Result<Datu
 		LET 		=> let_lisp(args, env),
 		LET_STAR 	=> let_star(args, env),
 		PROGN 		=> progn(args, env),
-		//_			=> Err(NOT_YET_IMPLEMENTED(FUNCTION(SPECIAL(*func))))
+		//_			=> Err(_NOT_YET_IMPLEMENTED(FUNCTION(SPECIAL(*func))))
 	}
 }
 

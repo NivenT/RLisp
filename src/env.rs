@@ -21,6 +21,8 @@ impl Env {
 		map.insert("*".to_string(), FUNCTION(NATIVE(MUL)));
 		map.insert("/".to_string(), FUNCTION(NATIVE(DIV)));
 		map.insert("MOD".to_string(), FUNCTION(NATIVE(MOD)));
+		map.insert("POWI".to_string(), FUNCTION(NATIVE(POWI)));
+		map.insert("POWR".to_string(), FUNCTION(NATIVE(POWR)));
 
 		map.insert(">".to_string(), FUNCTION(NATIVE(GT)));
 		map.insert(">=".to_string(), FUNCTION(NATIVE(GE)));
@@ -37,6 +39,24 @@ impl Env {
 		map.insert("NTH".to_string(), FUNCTION(NATIVE(NTH)));
 
 		map.insert("LOAD".to_string(), FUNCTION(NATIVE(LOAD)));
+
+		map.insert("FLOOR".to_string(), FUNCTION(NATIVE(FLOOR)));
+		map.insert("CEIL".to_string(), FUNCTION(NATIVE(CEIL)));
+
+		map.insert("TYPE".to_string(), FUNCTION(NATIVE(TYPE)));
+
+		map.insert("ATOM?".to_string(), FUNCTION(NATIVE(IS_ATOM)));
+		map.insert("LIST?".to_string(), FUNCTION(NATIVE(IS_LIST)));
+		map.insert("CONS?".to_string(), FUNCTION(NATIVE(IS_CONS)));
+		map.insert("SYMBOL?".to_string(), FUNCTION(NATIVE(IS_SYMBOL)));
+
+		map.insert("EQUAL".to_string(), FUNCTION(NATIVE(EQUAL)));
+
+		map.insert("WRITE-TO-STRING".to_string(), FUNCTION(NATIVE(WRITE_TO_STRING)));
+		map.insert("READ-FROM-STRING".to_string(), FUNCTION(NATIVE(READ_FROM_STRING)));
+		map.insert("STRING-CONCAT".to_string(), FUNCTION(NATIVE(STRING_CONCAT)));
+
+		map.insert("NOT".to_string(), FUNCTION(NATIVE(NOT)));
 
 		map.insert("IF".to_string(), FUNCTION(SPECIAL(IF)));
 		map.insert("LET".to_string(), FUNCTION(SPECIAL(LET)));
