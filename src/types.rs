@@ -1,7 +1,6 @@
 use std::fmt;
 use std::ops;
 use std::cmp;
-use std::collections::HashMap;
 
 pub fn tail<T>(vec: Vec<T>) -> Vec<T> {
 	vec.into_iter().skip(1).collect()
@@ -373,8 +372,7 @@ pub enum Special {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Lambda {
 	pub args: Vec<String>,
-	pub body: Box<Datum>,
-	pub env:  HashMap<String, Datum>
+	pub body: Box<Datum>
 }
 
 impl fmt::Display for Lambda {

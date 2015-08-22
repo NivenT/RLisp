@@ -110,7 +110,7 @@ fn apply_special(func: &Special, args: Vec<Datum>, env: &mut Env) -> Result<Datu
 	match *func {
 		DEFINE		=> define(args, env),
 		IF 			=> lisp_if(args, env),
-		LAMBDA_FUNC => lambda(args, env),
+		LAMBDA_FUNC => lambda(args),
 		DEFUN 		=> defun(args, env),
 		QUOTE 		=> quote(args),
 		BACKQUOTE   => backquote(args, env),
@@ -136,14 +136,13 @@ fn apply_lambda(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum,
 		}
 	}
 
-	env.push_map(&func.env);
-	for param_arg in params.into_iter().zip(&func.args) {
-		env.set(param_arg.1.clone(), param_arg.0);
+	env.push();
+	for (param, arg) in params.into_iter().zip(&func.args) {
+		env.set(arg.clone(), param);
 	}
 	let res = eval(&func.body, env);
-	env.pop();
-
-	return res;
+	//env.pop();
+	res
 }
 
 fn define(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
@@ -192,7 +191,7 @@ fn lisp_if(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 	}
 }
 
-fn lambda(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
+fn lambda(args: Vec<Datum>) -> Result<Datum, LispError> {
 	if args.len() != 2 {
 		return Err(INVALID_NUMBER_OF_ARGS(args.len(), 2));
 	} 
@@ -209,8 +208,10 @@ fn lambda(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 			}
 		}
 
-		let func = Lambda{args: arguments, body: Box::new(args[1].clone()), env: env.top()};
-		return Ok(FUNCTION(LAMBDA(func)));
+		return Ok(FUNCTION(LAMBDA(
+					Lambda{args: arguments,
+						   body: Box::new(args[1].clone())}
+					)));
 	} else {
 		return Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "list"));
 	}
@@ -221,7 +222,7 @@ fn defun(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 		return Err(INVALID_NUMBER_OF_ARGS(args.len(), 3));
 	} 
 
-	let lam = lambda(vec!(args[1].clone(), args[2].clone()), env);
+	let lam = lambda(vec!(args[1].clone(), args[2].clone()));
 	if lam.is_err() {
 		return lam;
 	} else if let ATOM(SYMBOL(name)) = args[0].clone() {

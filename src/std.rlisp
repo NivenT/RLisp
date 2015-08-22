@@ -21,7 +21,7 @@
 		nil
 		(if (equal (car (car lst)) elem)
 			(cdr (car lst))
-			(member (cdr lst) elem))))
+			(assoc elem (cdr lst)))))
 (defun map [func lst]
 	(if (null lst)
 		nil

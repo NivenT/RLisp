@@ -98,7 +98,9 @@ impl Env {
 		self.env_stack.pop();
 	}
 
-	pub fn top(&self) -> HashMap<String, Datum> {
-		self.env_stack.last().unwrap().clone()
+	pub fn reset(&mut self) {
+		while self.env_stack.len() > 2 {
+			self.env_stack.pop();
+		}
 	}
 }
