@@ -39,7 +39,6 @@ fn main() {
 	let mut input = String::new();
 	let mut result: Result<Datum, LispError>;
 	let mut env = Env::new();
-	let mut start = PreciseTime::now();
 
 	eval(&parse(&mut tokenize(&"(load \"std.rlisp\")".to_string())), &mut env);
 	loop {
@@ -68,11 +67,9 @@ fn main() {
 		}
 		if result != Err(LispError::MISMATCHED_BRACKETS) &&
 		   result != Err(LispError::NO_INPUT) {
-		   	start = PreciseTime::now();
 			result = eval(&parse(&mut tokenize(&input)), &mut env)
 		} match result {
-			Ok(ref a) 	=> println!("{}\nLength of computation: {}\n",
-									*a, start.to(PreciseTime::now())),
+			Ok(ref a) 	=> println!("{}\n", *a),
 			Err(ref a)	=> println!("{}\n", a.message())
 		}
 		env.reset();
