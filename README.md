@@ -40,4 +40,6 @@ load | opens a file, wraps contents in progn, and evaluates | sample.txt: (defun
 - [X] Add quote and backquote
 - [X] Make error messages more helpful
 - [X] Add functions written in RLisp
-- [ ] Improve speed
+- [X] Improve speed
+- [ ] Fix string parsing
+- [ ] Store last result
