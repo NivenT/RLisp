@@ -103,6 +103,7 @@ fn apply_native(func: &Native, args: Vec<Datum>, env: &mut Env) -> Result<Datum,
 		READ_FROM_STRING 	=> read_from_string(items),
 		STRING_CONCAT		=> string_concat(items),
 		NOT 				=> not(items),
+		PRINT 				=> print(items),
 		//_					=> Err(_NOT_YET_IMPLEMENTED(FUNCTION(NATIVE(*func))))
 	}
 }
@@ -142,7 +143,9 @@ fn apply_lambda(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum,
 	for (param, arg) in params.into_iter().zip(&func.args) {
 		env.set(arg.clone(), param);
 	}
-	eval(&func.body, env)
+	let res = eval(&func.body, env);
+	env.pop();
+	res
 }
 
 fn define(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
@@ -188,6 +191,18 @@ fn lisp_if(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 			}
 		},
 		e @ _	=> Err(INVALID_NUMBER_OF_ARGS(e, 3))
+	}
+}
+
+fn subval(old: Datum, new: Datum, tree: Datum) -> Datum {
+	if tree == old {
+		new
+	} else if let LIST(CONS(ref a, ref b)) = tree {
+		LIST(CONS(
+			Box::new(subval(old.clone(), new.clone(), *a.clone())),
+			Box::new(subval(old, new, *b.clone()))))
+	} else {
+		tree
 	}
 }
 

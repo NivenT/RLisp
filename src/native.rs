@@ -417,3 +417,14 @@ pub fn not(args: Vec<Datum>) -> Result<Datum, LispError> {
 		Ok(LIST(NIL))
 	}
 }
+
+pub fn print(args: Vec<Datum>) -> Result<Datum, LispError> {
+	if args.len() != 1 {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
+	} else if let ATOM(STRING(s)) = args[0].clone() {
+		println!("{}", s);
+		Ok(args[0].clone())
+	} else {
+		Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "string"))
+	}
+}

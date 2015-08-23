@@ -68,10 +68,9 @@ fn main() {
 		   result != Err(LispError::NO_INPUT) {
 			result = eval(&parse(&mut tokenize(&input)), &mut env)
 		} match result {
-			Ok(ref a) 	=> println!("{}\n", *a),
+			Ok(ref a) 	=> {println!("{}\n", *a); env.set("%%%".to_string(), a.clone());},
 			Err(ref a)	=> println!("{}\n", a.message())
 		}
-		env.reset();
 		/*
 		println!("Development output:");
 		println!("	tokens: {:?}\n", tokenize(&input));

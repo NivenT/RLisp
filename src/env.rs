@@ -50,11 +50,12 @@ impl Env {
 		map.insert("CONS?".to_string(), FUNCTION(NATIVE(IS_CONS)));
 		map.insert("SYMBOL?".to_string(), FUNCTION(NATIVE(IS_SYMBOL)));
 
-		map.insert("EQUAL".to_string(), FUNCTION(NATIVE(EQUAL)));
+		map.insert("EQUAL?".to_string(), FUNCTION(NATIVE(EQUAL)));
 
 		map.insert("WRITE-TO-STRING".to_string(), FUNCTION(NATIVE(WRITE_TO_STRING)));
 		map.insert("READ-FROM-STRING".to_string(), FUNCTION(NATIVE(READ_FROM_STRING)));
 		map.insert("STRING-CONCAT".to_string(), FUNCTION(NATIVE(STRING_CONCAT)));
+		map.insert("PRINT".to_string(), FUNCTION(NATIVE(PRINT)));
 
 		map.insert("NOT".to_string(), FUNCTION(NATIVE(NOT)));
 
@@ -97,11 +98,5 @@ impl Env {
 
 	pub fn pop(&mut self) {
 		self.env_stack.pop();
-	}
-
-	pub fn reset(&mut self) {
-		while self.env_stack.len() > 2 {
-			self.env_stack.pop();
-		}
 	}
 }

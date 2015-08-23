@@ -343,7 +343,6 @@ impl List {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[allow(non_camel_case_types)]
-//Some of the following functions can be implemented in RLisp instead of Rust
 pub enum Native {
 	ADD, SUB, MUL, DIV, MOD, POWI, POWR,
 	GT, GE, LT, LE, MATH_EQ,
@@ -354,7 +353,7 @@ pub enum Native {
 	TYPE,
 	IS_ATOM, IS_LIST, IS_CONS, IS_SYMBOL,
 	EQUAL,
-	WRITE_TO_STRING, READ_FROM_STRING, STRING_CONCAT,
+	WRITE_TO_STRING, READ_FROM_STRING, STRING_CONCAT, PRINT,
 	NOT
 }
 
