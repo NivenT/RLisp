@@ -15,7 +15,6 @@ use env::*;
 
 use std::io;
 use std::io::prelude::*;
-use time::PreciseTime;
 
 fn matched_parentheses(s: &String) -> Option<bool> {
 	let mut stack: Vec<char> = vec![];

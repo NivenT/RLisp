@@ -15,6 +15,7 @@ use types::Atom::*;
 use std::io::prelude::*;
 use std::fs::File;
 use std::collections::HashMap;
+use time::PreciseTime;
 
 pub fn eval(form: &Datum, env: &mut Env) -> Result<Datum, LispError> {
 	match *form {
@@ -117,6 +118,7 @@ fn apply_special(func: &Special, args: Vec<Datum>, env: &mut Env) -> Result<Datu
 		LET 		=> let_lisp(args, env),
 		LET_STAR 	=> let_star(args, env),
 		PROGN 		=> progn(args, env),
+		TIME 		=> time(args, env),
 		//_			=> Err(_NOT_YET_IMPLEMENTED(FUNCTION(SPECIAL(*func))))
 	}
 }
@@ -140,9 +142,7 @@ fn apply_lambda(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum,
 	for (param, arg) in params.into_iter().zip(&func.args) {
 		env.set(arg.clone(), param);
 	}
-	let res = eval(&func.body, env);
-	//env.pop();
-	res
+	eval(&func.body, env)
 }
 
 fn define(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
@@ -375,5 +375,16 @@ pub fn load(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 		eval(&parse(&mut tokenize(&format!("(progn {})", contents))), env)
 	} else {
 		Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "string"))
+	}
+}
+
+pub fn time(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
+	if args.len() != 1 {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
+	} else {
+		let start = PreciseTime::now();
+		let res = eval(&args[0], env);
+		println!("Duration of computation: {}", start.to(PreciseTime::now()));
+		res
 	}
 }

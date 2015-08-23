@@ -67,6 +67,7 @@ impl Env {
 		map.insert("DEFINE".to_string(), FUNCTION(SPECIAL(DEFINE)));
 		map.insert("DEFUN".to_string(), FUNCTION(SPECIAL(DEFUN)));
 		map.insert("LAMBDA".to_string(), FUNCTION(SPECIAL(LAMBDA_FUNC)));
+		map.insert("TIME".to_string(), FUNCTION(SPECIAL(TIME)));
 
 		Env{env_stack: vec![map, HashMap::new()]}
 	}

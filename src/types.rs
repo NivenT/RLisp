@@ -366,7 +366,8 @@ pub enum Special {
 	PROGN,
 	QUOTE, BACKQUOTE,
 	DEFINE, DEFUN,
-	LAMBDA_FUNC
+	LAMBDA_FUNC,
+	TIME
 }
 
 #[derive(Clone, Debug, PartialEq)]
