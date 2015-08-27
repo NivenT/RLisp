@@ -11,6 +11,7 @@ use types::Native::*;
 use types::Datum::*;
 use types::List::*;
 use types::Atom::*;
+use types::Number::*;
 
 use std::io::prelude::*;
 use std::fs::File;
@@ -124,6 +125,18 @@ fn apply_special(func: &Special, args: Vec<Datum>, env: &mut Env) -> Result<Datu
 	}
 }
 
+fn subval(old: Datum, new: Datum, tree: Datum) -> Datum {
+	if tree == old {
+		new
+	} else if let LIST(CONS(ref a, ref b)) = tree {
+		LIST(CONS(
+			Box::new(subval(old.clone(), new.clone(), *a.clone())),
+			Box::new(subval(old, new, *b.clone()))))
+	} else {
+		tree
+	}
+}
+
 fn apply_lambda(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 	if args.len() != func.args.len() {
 		return Err(INVALID_NUMBER_OF_ARGS(args.len(), func.args.len()));
@@ -139,6 +152,7 @@ fn apply_lambda(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum,
 		}
 	}
 
+	/* Cannot have a lambda return a lambda
 	env.push();
 	for (param, arg) in params.into_iter().zip(&func.args) {
 		env.set(arg.clone(), param);
@@ -146,6 +160,14 @@ fn apply_lambda(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum,
 	let res = eval(&func.body, env);
 	env.pop();
 	res
+	*/
+
+	//cannot have quote in a lambda
+	let mut tree: Datum = *func.body.clone();
+	for (param, arg) in params.into_iter().zip(&func.args) {
+		tree = subval(ATOM(SYMBOL(arg.clone())), param, tree)
+	}
+	eval(&tree, env)
 }
 
 fn define(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
@@ -191,18 +213,6 @@ fn lisp_if(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 			}
 		},
 		e @ _	=> Err(INVALID_NUMBER_OF_ARGS(e, 3))
-	}
-}
-
-fn subval(old: Datum, new: Datum, tree: Datum) -> Datum {
-	if tree == old {
-		new
-	} else if let LIST(CONS(ref a, ref b)) = tree {
-		LIST(CONS(
-			Box::new(subval(old.clone(), new.clone(), *a.clone())),
-			Box::new(subval(old, new, *b.clone()))))
-	} else {
-		tree
 	}
 }
 
