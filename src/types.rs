@@ -273,13 +273,7 @@ impl fmt::Display for List {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match *self {
 			NIL 					=> write!(f, "NIL"),
-			CONS(ref l1, ref l2)	=> {
-				if self.last() == LIST(NIL) {
-					write!(f, "{}", self.list_print())
-				} else {
-					write!(f, "({} . {})", **l1, **l2)
-				}
-			}
+			CONS(ref l1, ref l2)	=> write!(f, "{}", self.list_print())
 		}
 	}
 }
@@ -300,7 +294,7 @@ impl List {
 				let mut ret = vec![*l.clone()];
 				match **r {
 					LIST(ref a) => {ret.extend(a.get_items())},
-					_			=> {}
+					_			=> {ret.push(*r.clone())}
 				}
 				ret
 			},
@@ -308,7 +302,7 @@ impl List {
 		}
 	}
 	
-	pub fn last(&self) -> Datum {
+	fn last(&self) -> Datum {
 		match *self {
 			CONS(_, ref r)	=> match **r {
 				LIST(ref l)	=> l.last(),
@@ -324,7 +318,11 @@ impl List {
 		for i in 0..items.len()-1 {
 			ret = format!("{}{} ", ret, items[i]);
 		}
-		ret = format!("{}{})", ret, *items.last().unwrap());
+		if self.last() == LIST(NIL) {
+			ret = format!("{}{})", ret, *items.last().unwrap());
+		} else {
+			ret = format!("{}. {})", ret, *items.last().unwrap());
+		}
 		ret
 	}
 
