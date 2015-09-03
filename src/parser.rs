@@ -29,20 +29,46 @@ fn atomize(tkn: String) -> Atom {
 	}
 }
 
-fn str_replace(s: &String, reps: Vec<(&str, &str)>) -> String {
-	let mut ret = s.clone();
-	for r in reps {
-		ret = ret.replace(r.0, r.1);
-	}
-	ret
+pub fn tokenize(str: &String) -> Vec<Atom> {
+	tokenize_helper(&mut str.clone(), &mut vec![], &mut String::new())
 }
 
-pub fn tokenize(str: &String) -> Vec<Atom> {
-	str_replace(&str, vec![("(", " ( "), (")", " ) "),
-						   ("'", " ' "), ("`", " ` "), (",", " , "),
-		   				   ("[", " [ "), ("]", " ] ")])
-	   .split_whitespace().map(|s| atomize(s.to_string()))
-	   .collect()
+pub fn tokenize_helper(str: &mut String, tkns: &mut Vec<Atom>, curr: &mut String) -> Vec<Atom> {
+	match str.pop() {
+		Some('"') if curr.ends_with('"') => {
+			curr.insert(0, '"');
+			tkns.insert(0, atomize(curr.clone()));
+			tokenize_helper(str, tkns, &mut "".to_string())
+		},
+		Some('"') => tokenize_helper(str, tkns, &mut "\"".to_string()),
+		Some(c) if curr.ends_with('"') => {
+			curr.insert(0, c);
+			tokenize_helper(str, tkns, curr)
+		}
+		Some(c) if vec!['(', ')', '\'', '`', ',', '[', ']'].contains(&c)	=> {
+			if !curr.is_empty() {
+				tkns.insert(0, atomize(curr.clone()));
+			}
+			tkns.insert(0, atomize(c.to_string()));
+			tokenize_helper(str, tkns, &mut "".to_string())
+		},
+		Some(w) if w.is_whitespace() => {
+			if !curr.is_empty() {
+				tkns.insert(0, atomize(curr.clone()));
+			}
+			tokenize_helper(str, tkns, &mut "".to_string())
+		},
+		Some(c)	=> {
+			curr.insert(0, c);
+			tokenize_helper(str, tkns, curr)
+		},
+		None => {
+			if !curr.is_empty() {
+				tkns.insert(0, atomize(curr.clone()));
+			}
+			tkns.clone()
+		}
+	}
 }
 
 pub fn parse(tkns: &mut Vec<Atom>) -> Datum {

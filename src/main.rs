@@ -18,17 +18,20 @@ use std::io::prelude::*;
 
 fn matched_parentheses(s: &String) -> Option<bool> {
 	let mut stack: Vec<char> = vec![];
+	let mut in_string = false;
 	for c in s.chars() {
-		if c=='(' || c=='[' {
+		if (c=='(' || c=='[') && !in_string {
 			stack.push(c)
-		} else if c==')' {
+		} else if c==')' && !in_string {
 			if stack.pop().unwrap_or(' ') != '(' {
 				return None
 			}
-		} else if c==']' {
+		} else if c==']' && !in_string {
 			if stack.pop().unwrap_or(' ') != '[' {
 				return None
 			}
+		} else if c=='"' {
+			in_string = !in_string
 		}
 	}
 	Some(stack.is_empty())
@@ -72,6 +75,7 @@ fn main() {
 			Ok(ref a) 	=> {println!("{}\n", *a); env.set("%%%".to_string(), a.clone());},
 			Err(ref a)	=> println!("{}\n", a.message())
 		}
+		
 		/*
 		println!("Development output:");
 		println!("	tokens: {:?}\n", tokenize(&input));
