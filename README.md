@@ -43,4 +43,6 @@ load | opens a file, wraps contents in progn, and evaluates | sample.txt: (defun
 - [X] Improve speed
 - [ ] Fix string parsing
 - [X] Store last result (stored in variable %%%)
-- [ ] Perfect lambda expressions
+- [X] Perfect lambda expressions
+- [ ] Add optional parameters
+- [ ] Add rest parameter
