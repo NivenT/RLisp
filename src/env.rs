@@ -99,4 +99,8 @@ impl Env {
 	pub fn pop(&mut self) {
 		self.env_stack.pop();
 	}
+
+	pub fn top(&mut self) -> HashMap<String, Datum> {
+		self.env_stack.last().unwrap().clone()
+	}
 }

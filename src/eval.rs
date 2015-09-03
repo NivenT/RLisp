@@ -11,7 +11,6 @@ use types::Native::*;
 use types::Datum::*;
 use types::List::*;
 use types::Atom::*;
-use types::Number::*;
 
 use std::io::prelude::*;
 use std::fs::File;
@@ -113,7 +112,7 @@ fn apply_special(func: &Special, args: Vec<Datum>, env: &mut Env) -> Result<Datu
 	match *func {
 		DEFINE		=> define(args, env),
 		IF 			=> lisp_if(args, env),
-		LAMBDA_FUNC => lambda(args),
+		LAMBDA_FUNC => lambda(args, env),
 		DEFUN 		=> defun(args, env),
 		QUOTE 		=> quote(args),
 		BACKQUOTE   => backquote(args, env),
@@ -122,18 +121,6 @@ fn apply_special(func: &Special, args: Vec<Datum>, env: &mut Env) -> Result<Datu
 		PROGN 		=> progn(args, env),
 		TIME 		=> time(args, env),
 		//_			=> Err(_NOT_YET_IMPLEMENTED(FUNCTION(SPECIAL(*func))))
-	}
-}
-
-fn subval(old: Datum, new: Datum, tree: Datum) -> Datum {
-	if tree == old {
-		new
-	} else if let LIST(CONS(ref a, ref b)) = tree {
-		LIST(CONS(
-			Box::new(subval(old.clone(), new.clone(), *a.clone())),
-			Box::new(subval(old, new, *b.clone()))))
-	} else {
-		tree
 	}
 }
 
@@ -152,22 +139,13 @@ fn apply_lambda(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum,
 		}
 	}
 
-	/* Cannot have a lambda return a lambda
-	env.push();
+	env.push_map(&func.env);
 	for (param, arg) in params.into_iter().zip(&func.args) {
 		env.set(arg.clone(), param);
 	}
 	let res = eval(&func.body, env);
 	env.pop();
 	res
-	*/
-
-	//cannot have quote in a lambda
-	let mut tree: Datum = *func.body.clone();
-	for (param, arg) in params.into_iter().zip(&func.args) {
-		tree = subval(ATOM(SYMBOL(arg.clone())), param, tree)
-	}
-	eval(&tree, env)
 }
 
 fn define(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
@@ -216,7 +194,21 @@ fn lisp_if(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 	}
 }
 
-fn lambda(args: Vec<Datum>) -> Result<Datum, LispError> {
+fn lambda_contains(sym: String, tree: Datum) -> bool {
+	if ATOM(SYMBOL(sym.clone())) == tree {
+		true
+	} else if let LIST(CONS(ref a, ref b)) = tree {
+		if lambda_contains(sym.clone(), *a.clone()) {
+			true
+		} else {
+			lambda_contains(sym, *b.clone())
+		}
+	} else {
+		false
+	}
+}
+
+fn lambda(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 	if args.len() != 2 {
 		return Err(INVALID_NUMBER_OF_ARGS(args.len(), 2));
 	} 
@@ -235,7 +227,12 @@ fn lambda(args: Vec<Datum>) -> Result<Datum, LispError> {
 
 		return Ok(FUNCTION(LAMBDA(
 					Lambda{args: arguments,
-						   body: Box::new(args[1].clone())}
+						   body: Box::new(args[1].clone()),
+						   env: env.top().into_iter()
+						   		   .filter(|keyval| 
+						   		   		lambda_contains(keyval.0.clone(),
+						   		   						args[1].clone()))
+						   		   .collect()}
 					)));
 	} else {
 		return Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "list"));
@@ -247,7 +244,7 @@ fn defun(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 		return Err(INVALID_NUMBER_OF_ARGS(args.len(), 3));
 	} 
 
-	let lam = lambda(vec!(args[1].clone(), args[2].clone()));
+	let lam = lambda(vec!(args[1].clone(), args[2].clone()), env);
 	if lam.is_err() {
 		return lam;
 	} else if let ATOM(SYMBOL(name)) = args[0].clone() {

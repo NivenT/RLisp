@@ -40,6 +40,7 @@ fn main() {
 	let mut env = Env::new();
 
 	eval(&parse(&mut tokenize(&"(load \"std.rlisp\")".to_string())), &mut env);
+	env.push();
 	loop {
 		input.clear();
 		result =  Ok(Datum::LIST(List::NIL));
