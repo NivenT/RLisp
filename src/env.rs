@@ -10,7 +10,7 @@ use types::Datum::*;
 use std::collections::HashMap;
 
 pub struct Env {
-	env_stack: Vec<HashMap<String,Datum>>
+	pub env_stack: Vec<HashMap<String,Datum>>
 }
 
 impl Env {
@@ -102,5 +102,11 @@ impl Env {
 
 	pub fn top(&mut self) -> HashMap<String, Datum> {
 		self.env_stack.last().unwrap().clone()
+	}
+
+	pub fn join(&self) -> Vec<(String, Datum)> {
+		self.env_stack.clone().into_iter()
+			.flat_map(|map| map.into_iter())
+			.collect()
 	}
 }
