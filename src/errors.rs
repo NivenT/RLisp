@@ -11,6 +11,7 @@ pub enum LispError {
 	INVALID_ARG_LIST(Datum),
 	OVERRIDE_RESERVED(Datum),
 	CANNOT_OPEN_FILE(String),
+	DUPLICATE_ARG_KEYWORD(&'static str),
 	_NOT_YET_IMPLEMENTED(Datum),
 	MISMATCHED_BRACKETS,
 	NO_INPUT
@@ -37,6 +38,8 @@ impl LispError {
 				format!("Cannot open file: {}", reason),
 			OVERRIDE_RESERVED(x) =>
 				format!("Attempted to override reserved symbol: {}", x),
+			DUPLICATE_ARG_KEYWORD(x) =>
+				format!("Error: {} should not appear multiple times in the arg list", x),
 			_NOT_YET_IMPLEMENTED(x) =>
 				format!("{} has not been implemented yet", x),
 			MISMATCHED_BRACKETS =>

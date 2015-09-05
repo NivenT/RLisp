@@ -272,8 +272,8 @@ use self::List::*;
 impl fmt::Display for List {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match *self {
-			NIL 					=> write!(f, "NIL"),
-			CONS(ref l1, ref l2)	=> write!(f, "{}", self.list_print())
+			NIL 		=> write!(f, "NIL"),
+			CONS(..)	=> write!(f, "{}", self.list_print())
 		}
 	}
 }
@@ -372,14 +372,32 @@ pub enum Special {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Lambda {
 	pub args: Vec<String>,
+	pub optn: Vec<(String, Datum)>,
 	pub body: Box<Datum>,
 	pub env: HashMap<String, Datum>
 }
 
+fn to_string(v: Vec<(String, Datum)>) -> String {
+	if v.is_empty() {
+		return "[]".to_string();
+	}
+	let mut ret = "[".to_string();
+	for i in 0..v.len()-1 {
+		ret = format!("{}({:?} {}), ", ret, v[i].0, v[i].1);
+	}
+	ret = format!("{}({:?} {})", ret, v.last().unwrap().0, v.last().unwrap().1);
+	format!("{}]", ret)
+}
+
 impl fmt::Display for Lambda {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(f, "Lambda{{args: {:?}, body: {}}}",
+		if self.optn.is_empty() {
+			write!(f, "Lambda{{args: {:?}, body: {}}}",
 				self.args, self.body)
+		} else {
+			write!(f, "Lambda{{args: {:?}, optional args: {}, body: {}}}",
+				self.args, to_string(self.optn.clone()), self.body)
+		}
 	}
 }
 

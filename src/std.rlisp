@@ -15,7 +15,7 @@
 		nil
 		(if (equal? (car lst) elem)
 			t
-			(member (cdr lst) elem))))
+			(member elem (cdr lst)))))
 (defun assoc [elem lst]
 	(if (null? lst)
 		nil
@@ -32,7 +32,7 @@
 		(if (pred (car lst))
 			(cons (car lst) (filter pred (cdr lst)))
 			(filter pred (cdr lst)))))
-(defun range [min max step]
+(defun range [min max &optional (step 1)]
 	(if (>= min max)
 		nil
 		(cons min (range (+ min step) max step))))
@@ -48,3 +48,13 @@
 			(last (cdr lst)))))
 (defun complement [pred]
 	(lambda [x] (not (pred x))))
+(defun most [lst]
+	(if (< (length lst) 2)
+		nil
+		(if (= (length lst) 2)
+			(list (car lst))
+			(cons (car lst) (most (cdr lst))))))
+(defun reverse [lst]
+	(if (null? lst)
+		nil
+		(append (reverse (cdr lst)) (car lst))))

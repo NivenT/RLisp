@@ -125,12 +125,12 @@ fn apply_special(func: &Special, args: Vec<Datum>, env: &mut Env) -> Result<Datu
 }
 
 fn apply_lambda(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
-	if args.len() != func.args.len() {
+	if args.len() < func.args.len() || args.len() > func.args.len()+func.optn.len() {
 		return Err(INVALID_NUMBER_OF_ARGS(args.len(), func.args.len()));
 	}
 
-	let mut params: Vec<Datum> = Vec::with_capacity(args.len());
-	for i in 0..args.len() {
+	let mut params: Vec<Datum> = Vec::with_capacity(func.args.len());
+	for i in 0..func.args.len() {
 		let res = eval(&args[i], env);
 		if res.is_err() {
 			return res;
@@ -138,10 +138,25 @@ fn apply_lambda(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum,
 			params.push(res.ok().unwrap());
 		}
 	}
+	let mut optional_params: Vec<Datum> = Vec::with_capacity(func.optn.len());
+	for i in func.args.len()..args.len() {
+		let res = eval(&args[i], env);
+		if res.is_err() {
+			return res;
+		} else {
+			optional_params.push(res.ok().unwrap());
+		}
+	}
 
 	env.push_map(&func.env);
 	for (param, arg) in params.into_iter().zip(&func.args) {
 		env.set(arg.clone(), param);
+	}
+	for (name, default) in func.optn.clone() {
+		env.set(name.clone(), default);
+	}
+	for (param, arg) in optional_params.into_iter().zip(&func.optn) {
+		env.set(arg.0.clone(), param);
 	}
 	let res = eval(&func.body, env);
 	env.pop();
@@ -215,11 +230,28 @@ fn lambda(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 
 	if let LIST(params) = args[0].clone() {
 		let mut arguments: Vec<String> = vec![];
+		let mut optn_args: Vec<(String, Datum)> = vec![];
 		let params = params.get_items();
+		let mut is_optional: bool = false;
 
 		for param in params {
 			if let ATOM(SYMBOL(name)) = param {
-				arguments.push(name);
+				if name == "&OPTIONAL".to_string() {
+					is_optional = true;
+				} else if is_optional {
+					optn_args.push((name, LIST(NIL)));
+				} else {
+					arguments.push(name);
+				}
+			} else if let LIST(lst) = param.clone() {
+				let items = lst.get_items();
+				if items.len() != 2 {
+					return Err(INVALID_ARGUMENT_TYPE(param, "list of length 2"));
+				} else if let ATOM(SYMBOL(name)) = items[0].clone() {
+					optn_args.push((name, items[1].clone()));
+				} else {
+					return Err(INVALID_ARGUMENT_TYPE(items[1].clone(), "symbol"));
+				}
 			} else {
 				return Err(INVALID_ARGUMENT_TYPE(param, "symbol"));
 			}
@@ -227,6 +259,7 @@ fn lambda(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 
 		return Ok(FUNCTION(LAMBDA(
 					Lambda{args: arguments,
+						   optn: optn_args,
 						   body: Box::new(args[1].clone()),
 						   env: env.top().into_iter()
 						   		   .filter(|keyval| 
