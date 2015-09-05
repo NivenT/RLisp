@@ -41,8 +41,9 @@ load | opens a file, wraps contents in progn, and evaluates | sample.txt: (defun
 - [X] Make error messages more helpful
 - [X] Add functions written in RLisp
 - [X] Improve speed
-- [ ] Fix string parsing
+- [X] Fix string parsing
 - [X] Store last result (stored in variable %%%)
 - [X] Perfect lambda expressions
-- [ ] Add optional parameters
+- [X] Add optional parameters
 - [ ] Add rest parameter
+- [ ] Add cond and case
