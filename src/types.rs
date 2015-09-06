@@ -378,6 +378,7 @@ pub enum Special {
 pub struct Lambda {
 	pub args: Vec<String>,
 	pub optn: Vec<(String, Datum)>,
+	pub rest: Option<String>,
 	pub body: Box<Datum>,
 	pub env: HashMap<String, Datum>
 }
@@ -396,13 +397,15 @@ fn to_string(v: Vec<(String, Datum)>) -> String {
 
 impl fmt::Display for Lambda {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		if self.optn.is_empty() {
-			write!(f, "{{args: {:?}, body: {}}}",
-				self.args, self.body)
-		} else {
-			write!(f, "{{args: {:?}, optional args: {}, body: {}}}",
-				self.args, to_string(self.optn.clone()), self.body)
+		let mut s = format!("{{args: {:?}, ", self.args.clone());
+		if !self.optn.is_empty() {
+			s = format!("{}optional args: {}, ",
+				s, to_string(self.optn.clone()))
 		}
+		if self.rest != None {
+			s = format!("{}rest: {}, ", s, self.rest.clone().unwrap())
+		}
+		write!(f, "{}body: {}}}", s, self.body.clone())
 	}
 }
 

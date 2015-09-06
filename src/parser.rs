@@ -29,46 +29,44 @@ fn atomize(tkn: String) -> Atom {
 	}
 }
 
-pub fn tokenize(str: &String) -> Vec<Atom> {
-	tokenize_helper(&mut str.clone(), &mut vec![], &mut String::new())
-}
-
-pub fn tokenize_helper(str: &mut String, tkns: &mut Vec<Atom>, curr: &mut String) -> Vec<Atom> {
-	match str.pop() {
-		Some('"') if curr.ends_with('"') => {
-			curr.insert(0, '"');
-			tkns.insert(0, atomize(curr.clone()));
-			tokenize_helper(str, tkns, &mut "".to_string())
-		},
-		Some('"') => tokenize_helper(str, tkns, &mut "\"".to_string()),
-		Some(c) if curr.ends_with('"') => {
-			curr.insert(0, c);
-			tokenize_helper(str, tkns, curr)
-		}
-		Some(c) if vec!['(', ')', '\'', '`', ',', '[', ']'].contains(&c)	=> {
-			if !curr.is_empty() {
-				tkns.insert(0, atomize(curr.clone()));
+pub fn tokenize(s: &String) -> Vec<Atom> {
+	let mut curr = String::new();
+	let mut tkns: Vec<Atom> = Vec::new();
+	for character in s.chars() {
+		match character {
+			'"' if curr.starts_with('"') => {
+				curr.push('"');
+				tkns.push(atomize(curr.clone()));
+				curr = String::from("");
 			}
-			tkns.insert(0, atomize(c.to_string()));
-			tokenize_helper(str, tkns, &mut "".to_string())
-		},
-		Some(w) if w.is_whitespace() => {
-			if !curr.is_empty() {
-				tkns.insert(0, atomize(curr.clone()));
+			'"' => {
+				curr = String::from("\"");
 			}
-			tokenize_helper(str, tkns, &mut "".to_string())
-		},
-		Some(c)	=> {
-			curr.insert(0, c);
-			tokenize_helper(str, tkns, curr)
-		},
-		None => {
-			if !curr.is_empty() {
-				tkns.insert(0, atomize(curr.clone()));
+			c if curr.starts_with('"') => {
+				curr.push(c);
 			}
-			tkns.clone()
+			c if vec!['(', ')', '\'', '`', ',', '[', ']'].contains(&c) => {
+				if !curr.is_empty() {
+					tkns.push(atomize(curr.clone()))
+				}
+				tkns.push(atomize(c.to_string()));
+				curr = String::from("");
+			}
+			w if w.is_whitespace() => {
+				if !curr.is_empty() {
+					tkns.push(atomize(curr.clone()))
+				}
+				curr = String::from("")
+			}
+			c => {
+				curr.push(c);
+			}
 		}
 	}
+	if !curr.is_empty() {
+		tkns.push(atomize(curr.clone()))
+	}
+	tkns.clone()
 }
 
 pub fn parse(tkns: &mut Vec<Atom>) -> Datum {

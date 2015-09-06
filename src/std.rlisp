@@ -62,3 +62,14 @@
 	`(if ,pred ,body nil))
 (defmacro unless [pred body]
 	`(if (not ,pred) ,body nil))
+(defmacro and [&rest preds]
+	`(if (null? (quote ,preds))
+		t
+		(if (car (quote ,preds))
+			(apply and (cdr (quote ,preds))))))
+(defmacro or [&rest preds]
+	`(if (null? (quote ,preds))
+		nil
+		(if (car (quote ,preds))
+			(car (quote ,preds))
+			(apply or (cdr (quote ,preds))))))

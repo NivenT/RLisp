@@ -132,8 +132,14 @@ fn apply_special(func: &Special, args: Vec<Datum>, env: &mut Env) -> Result<Datu
 	}
 }
 
+fn min(a: usize, b: usize) -> usize {
+	if a<b {a} else {b}
+}
+
 fn apply_lambda(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
-	if args.len() < func.args.len() || args.len() > func.args.len()+func.optn.len() {
+	if (args.len() < func.args.len() || 
+	    args.len() > func.args.len()+func.optn.len()) &&
+	    func.rest == None {
 		return Err(INVALID_NUMBER_OF_ARGS(args.len(), func.args.len()));
 	}
 
@@ -147,12 +153,21 @@ fn apply_lambda(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum,
 		}
 	}
 	let mut optional_params: Vec<Datum> = Vec::with_capacity(func.optn.len());
-	for i in func.args.len()..args.len() {
+	for i in func.args.len()..min(args.len(), func.args.len()+func.optn.len()) {
 		let res = eval(&args[i], env);
 		if res.is_err() {
 			return res;
 		} else {
 			optional_params.push(res.ok().unwrap());
+		}
+	}
+	let mut rest_params: Vec<Datum> = Vec::new();
+	for i in func.args.len()+func.optn.len()..args.len() {
+		let res = eval(&args[i], env);
+		if res.is_err() {
+			return res;
+		} else {
+			rest_params.push(res.ok().unwrap());
 		}
 	}
 
@@ -166,42 +181,20 @@ fn apply_lambda(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum,
 	for (param, arg) in optional_params.into_iter().zip(&func.optn) {
 		env.set(arg.0.clone(), param);
 	}
+	if let Some(name) = func.rest.clone() {
+		env.set(name.clone(), LIST(List::from_vec(rest_params)));
+	}
 	let res = eval(&func.body, env);
 	env.pop();
 	res
 }
 
 fn apply_macro(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
-	if args.len() < func.args.len() || args.len() > func.args.len()+func.optn.len() {
-		return Err(INVALID_NUMBER_OF_ARGS(args.len(), func.args.len()));
-	}
-
-	let mut params: Vec<Datum> = Vec::with_capacity(func.args.len());
-	for i in 0..func.args.len() {
-		params.push(args[i].clone())
-	}
-	let mut optional_params: Vec<Datum> = Vec::with_capacity(func.optn.len());
-	for i in func.args.len()..args.len() {
-		optional_params.push(args[i].clone())
-	}
-
-	env.push_map(&func.env);
-	for (param, arg) in params.into_iter().zip(&func.args) {
-		env.set(arg.clone(), param);
-	}
-	for (name, default) in func.optn.clone() {
-		env.set(name.clone(), default);
-	}
-	for (param, arg) in optional_params.into_iter().zip(&func.optn) {
-		env.set(arg.0.clone(), param);
-	}
-	let res = eval(&func.body, env);
-	if let Ok(code) = res {
-		let res = eval(&code, env);
-		env.pop();
+	let res = macroexpand_helper(func, args, env);
+	if res.is_err() {
 		res
 	} else {
-		res
+		eval(&res.ok().unwrap(), env)
 	}
 }
 
@@ -273,15 +266,24 @@ fn lambda(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 	if let LIST(params) = args[0].clone() {
 		let mut arguments: Vec<String> = vec![];
 		let mut optn_args: Vec<(String, Datum)> = vec![];
+		let mut rest_arg: Option<String> = None;
 		let params = params.get_items();
-		let mut is_optional: bool = false;
+		let mut mode: usize = 0; //(0 - normal, 1 - optional, 2 - rest)
 
 		for param in params {
 			if let ATOM(SYMBOL(name)) = param {
 				if name == "&OPTIONAL".to_string() {
-					is_optional = true;
-				} else if is_optional {
+					mode = 1;
+				} else if name == "&REST".to_string() {
+					mode = 2;
+				} else if mode == 1 {
 					optn_args.push((name, LIST(NIL)));
+				} else if mode == 2 {
+					if rest_arg == None {
+						rest_arg = Some(name);
+					} else {
+						return Err(MULTIPLE_REST_ARGS);
+					}
 				} else {
 					arguments.push(name);
 				}
@@ -302,6 +304,7 @@ fn lambda(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 		return Ok(FUNCTION(LAMBDA(
 					Lambda{args: arguments,
 						   optn: optn_args,
+						   rest: rest_arg,
 						   body: Box::new(args[1].clone()),
 						   env: env.top().into_iter()
 						   		   .filter(|keyval| 
@@ -533,51 +536,11 @@ pub fn eval_lisp(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 }
 
 fn macro_lisp(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
-	if args.len() != 2 {
-		return Err(INVALID_NUMBER_OF_ARGS(args.len(), 2));
-	} 
-
-	if let LIST(params) = args[0].clone() {
-		let mut arguments: Vec<String> = vec![];
-		let mut optn_args: Vec<(String, Datum)> = vec![];
-		let params = params.get_items();
-		let mut is_optional: bool = false;
-
-		for param in params {
-			if let ATOM(SYMBOL(name)) = param {
-				if name == "&OPTIONAL".to_string() {
-					is_optional = true;
-				} else if is_optional {
-					optn_args.push((name, LIST(NIL)));
-				} else {
-					arguments.push(name);
-				}
-			} else if let LIST(lst) = param.clone() {
-				let items = lst.get_items();
-				if items.len() != 2 {
-					return Err(INVALID_ARGUMENT_TYPE(param, "list of length 2"));
-				} else if let ATOM(SYMBOL(name)) = items[0].clone() {
-					optn_args.push((name, items[1].clone()));
-				} else {
-					return Err(INVALID_ARGUMENT_TYPE(items[1].clone(), "symbol"));
-				}
-			} else {
-				return Err(INVALID_ARGUMENT_TYPE(param, "symbol"));
-			}
-		}
-
-		return Ok(FUNCTION(MACRO(
-					Lambda{args: arguments,
-						   optn: optn_args,
-						   body: Box::new(args[1].clone()),
-						   env: env.top().into_iter()
-						   		   .filter(|keyval| 
-						   		   		lambda_contains(keyval.0.clone(),
-						   		   						args[1].clone()))
-						   		   .collect()}
-					)));
+	let lam = lambda(args, env);
+	if let Ok(FUNCTION(LAMBDA(mac))) = lam {
+		Ok(FUNCTION(MACRO(mac)))
 	} else {
-		return Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "list"));
+		lam //error
 	}
 }
 
@@ -619,7 +582,9 @@ fn macroexpand(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 }
 
 fn macroexpand_helper(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
-	if args.len() < func.args.len() || args.len() > func.args.len()+func.optn.len() {
+	if (args.len() < func.args.len() || 
+	    args.len() > func.args.len()+func.optn.len()) &&
+	    func.rest == None {
 		return Err(INVALID_NUMBER_OF_ARGS(args.len(), func.args.len()));
 	}
 
@@ -628,8 +593,12 @@ fn macroexpand_helper(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<
 		params.push(args[i].clone())
 	}
 	let mut optional_params: Vec<Datum> = Vec::with_capacity(func.optn.len());
-	for i in func.args.len()..args.len() {
+	for i in func.args.len()..min(args.len(), func.args.len()+func.optn.len()) {
 		optional_params.push(args[i].clone())
+	}
+	let mut rest_params: Vec<Datum> = Vec::new();
+	for i in func.args.len()+func.optn.len()..args.len() {
+		rest_params.push(args[i].clone())
 	}
 
 	env.push_map(&func.env);
@@ -641,6 +610,9 @@ fn macroexpand_helper(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<
 	}
 	for (param, arg) in optional_params.into_iter().zip(&func.optn) {
 		env.set(arg.0.clone(), param);
+	}
+	if let Some(name) = func.rest.clone() {
+		env.set(name, LIST(List::from_vec(rest_params)));
 	}
 	let res = eval(&func.body, env);
 	env.pop();

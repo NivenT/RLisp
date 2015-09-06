@@ -12,6 +12,7 @@ pub enum LispError {
 	OVERRIDE_RESERVED(Datum),
 	CANNOT_OPEN_FILE(String),
 	_NOT_YET_IMPLEMENTED(Datum),
+	MULTIPLE_REST_ARGS,
 	MISMATCHED_BRACKETS,
 	NO_INPUT
 }
@@ -39,6 +40,8 @@ impl LispError {
 				format!("Attempted to override reserved symbol: {}", x),
 			_NOT_YET_IMPLEMENTED(x) =>
 				format!("{} has not been implemented yet", x),
+			MULTIPLE_REST_ARGS =>
+				format!("Error: arg list should contain at most 1 &rest argument"),
 			MISMATCHED_BRACKETS =>
 				format!("Attempted to close a parenthesis with a square bracket or vice versa"),
 			NO_INPUT =>
