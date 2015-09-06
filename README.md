@@ -35,7 +35,7 @@ load | opens a file, wraps contents in progn, and evaluates | sample.txt: (defun
 ## TODO (in no particular order)
 - [X] Add more native functions
 - [X] Add special forms
-- [ ] Add macros
+- [X] Add macros
 - [X] Allow user to modify environment
 - [X] Add quote and backquote
 - [X] Make error messages more helpful
@@ -45,5 +45,5 @@ load | opens a file, wraps contents in progn, and evaluates | sample.txt: (defun
 - [X] Store last result (stored in variable %%%)
 - [X] Perfect lambda expressions
 - [X] Add optional parameters
-- [ ] Add rest parameter
+- [X] Add rest parameter
 - [ ] Add cond and case
