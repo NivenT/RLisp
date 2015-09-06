@@ -46,4 +46,4 @@ load | opens a file, wraps contents in progn, and evaluates | sample.txt: (defun
 - [X] Perfect lambda expressions
 - [X] Add optional parameters
 - [X] Add rest parameter
-- [ ] Add cond and case
+- [X] Add cond and case
