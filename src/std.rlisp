@@ -94,6 +94,14 @@
 		(if (pred (car lst))
 			(cons (car lst) (filter pred (cdr lst)))
 			(filter pred (cdr lst)))))
+(defun foldl [func init lst]
+	(if (null? lst)
+		init
+		(foldl func (func init (car lst)) (cdr lst))))
+(defun foldr [func init lst]
+	(if (null? lst)
+		init
+		(foldr func (func (last lst) init) (most lst))))
 (defun range [min max &optional (step 1)]
 	(if (>= min max)
 		nil
