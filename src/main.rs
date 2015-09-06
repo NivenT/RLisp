@@ -64,7 +64,8 @@ fn main() {
 	let mut result: Result<Datum, LispError>;
 	let mut env = Env::new();
 
-	eval(&parse(&mut tokenize(&"(load \"std.rlisp\")".to_string())), &mut env);
+	eval(&parse(&mut tokenize(&"(load \"std.rlisp\")".to_string())),
+		 &mut env).ok();
 	env.push();
 	loop {
 		input.clear();
@@ -106,6 +107,8 @@ fn main() {
 			}
 			if min.1 <= 2 {
 				println!("Did you mean '{}'?", min.0);
+			} else {
+				println!("Did you mean '(QUOTE {})'?", name);
 			}
 		}
 		println!("");

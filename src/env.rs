@@ -10,7 +10,7 @@ use types::Datum::*;
 use std::collections::HashMap;
 
 pub struct Env {
-	pub env_stack: Vec<HashMap<String,Datum>>
+	env_stack: Vec<HashMap<String,Datum>>
 }
 
 impl Env {
@@ -58,6 +58,10 @@ impl Env {
 		map.insert("PRINT".to_string(), FUNCTION(NATIVE(PRINT)));
 
 		map.insert("NOT".to_string(), FUNCTION(NATIVE(NOT)));
+		map.insert("SET".to_string(), FUNCTION(NATIVE(SET)));
+		map.insert("GENSYM".to_string(), FUNCTION(NATIVE(GENSYM)));
+		map.insert("EVAL".to_string(), FUNCTION(NATIVE(EVAL)));
+		map.insert("APPLY".to_string(), FUNCTION(NATIVE(APPLY)));
 
 		map.insert("IF".to_string(), FUNCTION(SPECIAL(IF)));
 		map.insert("LET".to_string(), FUNCTION(SPECIAL(LET)));
@@ -69,6 +73,9 @@ impl Env {
 		map.insert("DEFUN".to_string(), FUNCTION(SPECIAL(DEFUN)));
 		map.insert("LAMBDA".to_string(), FUNCTION(SPECIAL(LAMBDA_FUNC)));
 		map.insert("TIME".to_string(), FUNCTION(SPECIAL(TIME)));
+		map.insert("MACRO".to_string(), FUNCTION(SPECIAL(MACRO_FUNC)));
+		map.insert("DEFMACRO".to_string(), FUNCTION(SPECIAL(DEFMACRO)));
+		map.insert("MACROEXPAND".to_string(), FUNCTION(SPECIAL(MACROEXPAND)));
 
 		Env{env_stack: vec![map, HashMap::new()]}
 	}

@@ -318,7 +318,8 @@ pub fn type_lisp(args: Vec<Datum>) -> Result<Datum, LispError> {
 		LIST(NIL)					=> Ok(ATOM(SYMBOL("NULL".to_string()))),
 		FUNCTION(SPECIAL(_))		=> Ok(ATOM(SYMBOL("SPECIAL FUNCTION".to_string()))),
 		FUNCTION(NATIVE(_))			=> Ok(ATOM(SYMBOL("NATIVE FUNCTION".to_string()))),
-		FUNCTION(LAMBDA(_))			=> Ok(ATOM(SYMBOL("LAMBDA EXPRESSION".to_string())))
+		FUNCTION(LAMBDA(_))			=> Ok(ATOM(SYMBOL("LAMBDA EXPRESSION".to_string()))),
+		FUNCTION(MACRO(_))			=> Ok(ATOM(SYMBOL("MACRO".to_string())))
 	}
 }
 

@@ -56,7 +56,8 @@ fn apply(func: Function, args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispE
 	match func {
 		SPECIAL(ref s)	=> apply_special(s, args, env),
 		NATIVE(ref n)	=> apply_native(n, args, env),
-		LAMBDA(ref l)	=> apply_lambda(l, args, env)
+		LAMBDA(ref l)	=> apply_lambda(l, args, env),
+		MACRO(ref m)	=> apply_macro(m, args, env)
 	}
 }
 
@@ -104,6 +105,10 @@ fn apply_native(func: &Native, args: Vec<Datum>, env: &mut Env) -> Result<Datum,
 		STRING_CONCAT		=> string_concat(items),
 		NOT 				=> not(items),
 		PRINT 				=> print(items),
+		SET 				=> set(items, env),
+		GENSYM				=> gensym(items, env),
+		APPLY 				=> apply_lisp(items, env),
+		EVAL 				=> eval_lisp(items, env),
 		//_					=> Err(_NOT_YET_IMPLEMENTED(FUNCTION(NATIVE(*func))))
 	}
 }
@@ -120,6 +125,9 @@ fn apply_special(func: &Special, args: Vec<Datum>, env: &mut Env) -> Result<Datu
 		LET_STAR 	=> let_star(args, env),
 		PROGN 		=> progn(args, env),
 		TIME 		=> time(args, env),
+		MACRO_FUNC  => macro_lisp(args, env),
+		DEFMACRO    => defmacro(args, env),
+		MACROEXPAND => macroexpand(args, env),
 		//_			=> Err(_NOT_YET_IMPLEMENTED(FUNCTION(SPECIAL(*func))))
 	}
 }
@@ -161,6 +169,40 @@ fn apply_lambda(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum,
 	let res = eval(&func.body, env);
 	env.pop();
 	res
+}
+
+fn apply_macro(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
+	if args.len() < func.args.len() || args.len() > func.args.len()+func.optn.len() {
+		return Err(INVALID_NUMBER_OF_ARGS(args.len(), func.args.len()));
+	}
+
+	let mut params: Vec<Datum> = Vec::with_capacity(func.args.len());
+	for i in 0..func.args.len() {
+		params.push(args[i].clone())
+	}
+	let mut optional_params: Vec<Datum> = Vec::with_capacity(func.optn.len());
+	for i in func.args.len()..args.len() {
+		optional_params.push(args[i].clone())
+	}
+
+	env.push_map(&func.env);
+	for (param, arg) in params.into_iter().zip(&func.args) {
+		env.set(arg.clone(), param);
+	}
+	for (name, default) in func.optn.clone() {
+		env.set(name.clone(), default);
+	}
+	for (param, arg) in optional_params.into_iter().zip(&func.optn) {
+		env.set(arg.0.clone(), param);
+	}
+	let res = eval(&func.body, env);
+	if let Ok(code) = res {
+		let res = eval(&code, env);
+		env.pop();
+		res
+	} else {
+		res
+	}
 }
 
 fn define(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
@@ -310,6 +352,7 @@ fn backquote(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 fn backquote_helper(arg: &Datum, env: &mut Env) -> Result<Datum, LispError> {
 	match *arg {
 		ref e @ ATOM(_) | ref e @ FUNCTION(_) 	=> Ok(e.clone()),
+		LIST(NIL)								=> Ok(LIST(NIL)),
 		LIST(ref lst)							=> {
 			if lst.car() == ATOM(SYMBOL("COMMA".to_string())) {
 				eval(&lst.get_items()[1], env) //assumes list is of form (COMMA item)
@@ -442,4 +485,164 @@ pub fn time(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 		println!("Duration of computation: {}", start.to(PreciseTime::now()));
 		res
 	}
+}
+
+pub fn set(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
+	if args.len() != 2 {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 2))
+	} else if let ATOM(SYMBOL(name)) = args[0].clone() {
+		Ok(env.set(name, args[1].clone()))
+	} else {
+		Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "symbol"))
+	}
+}
+
+pub fn gensym(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
+	if args.len() != 0 {
+		return Err(INVALID_NUMBER_OF_ARGS(args.len(), 0));
+	}
+	for num in 0.. {
+		let sym = format!(":G{}", num);
+		if let Err(..) = env.get(&sym) {
+			return Ok(ATOM(SYMBOL(sym)));
+		}
+	}
+	Err(NO_INPUT) //never be reached
+}
+
+pub fn apply_lisp(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
+	if args.len() != 2 {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 2))
+	} else if let FUNCTION(func) = args[0].clone() {
+		if let LIST(lst) = args[1].clone() {
+			apply(func, lst.get_items(), env)
+		} else {
+			Err(INVALID_ARGUMENT_TYPE(args[1].clone(), "list"))
+		}
+	} else {
+		Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "function"))
+	}
+}
+
+pub fn eval_lisp(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
+	if args.len() != 1 {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
+	} else {
+		eval(&args[0], env)
+	}
+}
+
+fn macro_lisp(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
+	if args.len() != 2 {
+		return Err(INVALID_NUMBER_OF_ARGS(args.len(), 2));
+	} 
+
+	if let LIST(params) = args[0].clone() {
+		let mut arguments: Vec<String> = vec![];
+		let mut optn_args: Vec<(String, Datum)> = vec![];
+		let params = params.get_items();
+		let mut is_optional: bool = false;
+
+		for param in params {
+			if let ATOM(SYMBOL(name)) = param {
+				if name == "&OPTIONAL".to_string() {
+					is_optional = true;
+				} else if is_optional {
+					optn_args.push((name, LIST(NIL)));
+				} else {
+					arguments.push(name);
+				}
+			} else if let LIST(lst) = param.clone() {
+				let items = lst.get_items();
+				if items.len() != 2 {
+					return Err(INVALID_ARGUMENT_TYPE(param, "list of length 2"));
+				} else if let ATOM(SYMBOL(name)) = items[0].clone() {
+					optn_args.push((name, items[1].clone()));
+				} else {
+					return Err(INVALID_ARGUMENT_TYPE(items[1].clone(), "symbol"));
+				}
+			} else {
+				return Err(INVALID_ARGUMENT_TYPE(param, "symbol"));
+			}
+		}
+
+		return Ok(FUNCTION(MACRO(
+					Lambda{args: arguments,
+						   optn: optn_args,
+						   body: Box::new(args[1].clone()),
+						   env: env.top().into_iter()
+						   		   .filter(|keyval| 
+						   		   		lambda_contains(keyval.0.clone(),
+						   		   						args[1].clone()))
+						   		   .collect()}
+					)));
+	} else {
+		return Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "list"));
+	}
+}
+
+fn defmacro(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
+	if args.len() != 3 {
+		return Err(INVALID_NUMBER_OF_ARGS(args.len(), 3));
+	} 
+
+	let mac = macro_lisp(vec!(args[1].clone(), args[2].clone()), env);
+	if mac.is_err() {
+		return mac;
+	} else if let ATOM(SYMBOL(name)) = args[0].clone() {
+		match env.get(&name) {
+			Ok(ref e @ FUNCTION(SPECIAL(_))) |
+			Ok(ref e @ FUNCTION(NATIVE(_))) => return Err(OVERRIDE_RESERVED(e.clone())),
+			_								=> return Ok(env.set(name, mac.ok().unwrap()))
+		}
+	} else {
+		return Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "symbol"))
+	}
+}
+
+fn macroexpand(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
+	if args.len() != 1 {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
+	} else if let LIST(lst@CONS(..)) = args[0].clone() {
+		let items = lst.get_items();
+		let func = eval(&items[0], env);
+		if func.is_err() {
+			func
+		} else if let Ok(FUNCTION(MACRO(mac))) = func {
+			macroexpand_helper(&mac, tail(items), env)
+		} else {
+			Err(INVALID_ARGUMENT_TYPE(func.ok().unwrap(), "macro"))
+		}
+	} else {
+		Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "nonempty list"))
+	}
+}
+
+fn macroexpand_helper(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
+	if args.len() < func.args.len() || args.len() > func.args.len()+func.optn.len() {
+		return Err(INVALID_NUMBER_OF_ARGS(args.len(), func.args.len()));
+	}
+
+	let mut params: Vec<Datum> = Vec::with_capacity(func.args.len());
+	for i in 0..func.args.len() {
+		params.push(args[i].clone())
+	}
+	let mut optional_params: Vec<Datum> = Vec::with_capacity(func.optn.len());
+	for i in func.args.len()..args.len() {
+		optional_params.push(args[i].clone())
+	}
+
+	env.push_map(&func.env);
+	for (param, arg) in params.into_iter().zip(&func.args) {
+		env.set(arg.clone(), param);
+	}
+	for (name, default) in func.optn.clone() {
+		env.set(name.clone(), default);
+	}
+	for (param, arg) in optional_params.into_iter().zip(&func.optn) {
+		env.set(arg.0.clone(), param);
+	}
+	let res = eval(&func.body, env);
+	env.pop();
+	res
 }

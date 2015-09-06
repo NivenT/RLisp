@@ -354,7 +354,11 @@ pub enum Native {
 	IS_ATOM, IS_LIST, IS_CONS, IS_SYMBOL,
 	EQUAL,
 	WRITE_TO_STRING, READ_FROM_STRING, STRING_CONCAT, PRINT,
-	NOT
+	NOT,
+	SET,
+	GENSYM,
+	APPLY,
+	EVAL
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -364,8 +368,9 @@ pub enum Special {
 	LET, LET_STAR,
 	PROGN,
 	QUOTE, BACKQUOTE,
-	DEFINE, DEFUN,
-	LAMBDA_FUNC,
+	DEFINE, DEFUN, DEFMACRO,
+	LAMBDA_FUNC, MACRO_FUNC,
+	MACROEXPAND,
 	TIME
 }
 
@@ -392,10 +397,10 @@ fn to_string(v: Vec<(String, Datum)>) -> String {
 impl fmt::Display for Lambda {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		if self.optn.is_empty() {
-			write!(f, "Lambda{{args: {:?}, body: {}}}",
+			write!(f, "{{args: {:?}, body: {}}}",
 				self.args, self.body)
 		} else {
-			write!(f, "Lambda{{args: {:?}, optional args: {}, body: {}}}",
+			write!(f, "{{args: {:?}, optional args: {}, body: {}}}",
 				self.args, to_string(self.optn.clone()), self.body)
 		}
 	}
@@ -405,7 +410,8 @@ impl fmt::Display for Lambda {
 pub enum Function {
 	SPECIAL(Special),
 	NATIVE(Native),
-	LAMBDA(Lambda)
+	LAMBDA(Lambda),
+	MACRO(Lambda)
 }
 
 use self::Function::*;
@@ -415,7 +421,8 @@ impl fmt::Display for Function {
 		match *self {
 			SPECIAL(s)		=> write!(f, "{:?}", s),
 			NATIVE(n)		=> write!(f, "{:?}", n),
-			LAMBDA(ref l)	=> write!(f, "{}", l)
+			LAMBDA(ref l)	=> write!(f, "Lambda{}", l),
+			MACRO(ref m)	=> write!(f, "Macro{}", m)
 		}
 	}
 }

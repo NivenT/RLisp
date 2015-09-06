@@ -58,3 +58,7 @@
 	(if (null? lst)
 		nil
 		(append (reverse (cdr lst)) (car lst))))
+(defmacro when [pred body]
+	`(if ,pred ,body nil))
+(defmacro unless [pred body]
+	`(if (not ,pred) ,body nil))
