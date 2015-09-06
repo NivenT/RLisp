@@ -397,9 +397,12 @@ fn to_string(v: Vec<(String, Datum)>) -> String {
 
 impl fmt::Display for Lambda {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		let mut s = format!("{{args: {:?}, ", self.args.clone());
+		let mut s = format!("{{");
+		if !self.args.is_empty() {
+			s = format!("{}args: {:?}, ", s, self.args.clone())
+		}
 		if !self.optn.is_empty() {
-			s = format!("{}optional args: {}, ",
+			s = format!("{}optional args: {}, ", 
 				s, to_string(self.optn.clone()))
 		}
 		if self.rest != None {
