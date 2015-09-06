@@ -70,6 +70,8 @@
 		lst2 
 		(cons (car lst1) (join (cdr lst1) lst2))))
 (defun append [lst1 item] (join lst1 (list item)))
+(defun list* [&rest lists]
+	(join (most lists) (last lists)))
 (defun member [elem lst]
 	(if (null? lst)
 		nil
@@ -108,12 +110,6 @@
 			(last (cdr lst)))))
 (defun complement [pred]
 	(lambda [x] (not (pred x))))
-(defun most [lst]
-	(if (< (length lst) 2)
-		nil
-		(if (= (length lst) 2)
-			(list (car lst))
-			(cons (car lst) (most (cdr lst))))))
 (defun reverse [lst]
 	(if (null? lst)
 		nil
@@ -140,3 +136,17 @@
 		(if (eval (caar (quote ,conditions)))
 			(eval (cadar (quote ,conditions)))
 			(apply cond (cdr (quote ,conditions))))))
+(defmacro dolist [var lst &rest body]
+	`(if (null? (quote ,lst))
+		nil
+		(progn (let ((,var (car (quote ,lst))))
+			(apply progn (quote ,body)))
+			(apply dolist (list* (quote ,var) (cdr (quote ,lst)) (quote 
+				,body))))))
+(defmacro dotimes [var start stop inc &rest body]
+	`(if (>= ,start ,stop)
+		nil
+		(progn (let ((,var ,start))
+			(apply progn (quote ,body)))
+			(apply dotimes (list* (quote ,var) (+ ,inc ,start) ,stop ,inc
+				(quote ,body))))))

@@ -422,10 +422,22 @@ pub fn not(args: Vec<Datum>) -> Result<Datum, LispError> {
 pub fn print(args: Vec<Datum>) -> Result<Datum, LispError> {
 	if args.len() != 1 {
 		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
-	} else if let ATOM(STRING(s)) = args[0].clone() {
-		println!("{}", s);
-		Ok(args[0].clone())
 	} else {
-		Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "string"))
+		println!("{}", args[0]);
+		Ok(args[0].clone())
+	} 
+}
+
+pub fn most(args: Vec<Datum>) -> Result<Datum, LispError> {
+	if args.len() != 1 {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
+	} else if let LIST(NIL) = args[0].clone() {
+		Ok(LIST(NIL))
+	} else if let LIST(lst) = args[0].clone() {
+		let mut v = lst.get_items();
+		v.pop();
+		Ok(LIST(List::from_vec(v)))
+	} else {
+		Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "list"))
 	}
 }

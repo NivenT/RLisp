@@ -37,6 +37,7 @@ impl Env {
 
 		map.insert("NTHCDR".to_string(), FUNCTION(NATIVE(NTH_CDR)));
 		map.insert("NTH".to_string(), FUNCTION(NATIVE(NTH)));
+		map.insert("MOST".to_string(), FUNCTION(NATIVE(MOST)));
 
 		map.insert("LOAD".to_string(), FUNCTION(NATIVE(LOAD)));
 

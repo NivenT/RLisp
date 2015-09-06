@@ -109,6 +109,7 @@ fn apply_native(func: &Native, args: Vec<Datum>, env: &mut Env) -> Result<Datum,
 		GENSYM				=> gensym(items, env),
 		APPLY 				=> apply_lisp(items, env),
 		EVAL 				=> eval_lisp(items, env),
+		MOST 				=> most(items),
 		//_					=> Err(_NOT_YET_IMPLEMENTED(FUNCTION(NATIVE(*func))))
 	}
 }
