@@ -406,7 +406,7 @@ impl fmt::Display for Lambda {
 				s, to_string(self.optn.clone()))
 		}
 		if self.rest != None {
-			s = format!("{}rest: {}, ", s, self.rest.clone().unwrap())
+			s = format!("{}rest: {:?}, ", s, self.rest.clone().unwrap())
 		}
 		write!(f, "{}body: {}}}", s, self.body.clone())
 	}

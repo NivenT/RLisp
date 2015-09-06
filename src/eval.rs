@@ -21,7 +21,7 @@ pub fn eval(form: &Datum, env: &mut Env) -> Result<Datum, LispError> {
 	match *form {
 		LIST(ref l)	=> eval_list(l, env),
 		ATOM(ref a) => eval_atom(a, env),
-		ref e @ _	=> Err(INVALID_FORM(e.clone()))
+		ref e @ _	=> Ok(e.clone())
 	}
 }
 
@@ -177,7 +177,11 @@ fn apply_lambda(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum,
 		env.set(arg.clone(), param);
 	}
 	for (name, default) in func.optn.clone() {
-		env.set(name.clone(), default);
+		let res = eval(&default, env);
+		if res.is_err() {
+			return res;
+		}
+		env.set(name.clone(), res.ok().unwrap());
 	}
 	for (param, arg) in optional_params.into_iter().zip(&func.optn) {
 		env.set(arg.0.clone(), param);
@@ -607,7 +611,11 @@ fn macroexpand_helper(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<
 		env.set(arg.clone(), param);
 	}
 	for (name, default) in func.optn.clone() {
-		env.set(name.clone(), default);
+		let res = eval(&default, env);
+		if res.is_err() {
+			return res;
+		}
+		env.set(name.clone(), res.ok().unwrap());
 	}
 	for (param, arg) in optional_params.into_iter().zip(&func.optn) {
 		env.set(arg.0.clone(), param);

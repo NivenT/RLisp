@@ -84,6 +84,18 @@
 		(if (equal? (car (car lst)) elem)
 			(cdr (car lst))
 			(assoc elem (cdr lst)))))
+(defun any? [func lst]
+	(if (null? lst)
+		nil
+		(if (func (car lst))
+			(car lst)
+			(any? func (cdr lst)))))
+(defun all? [func lst]
+	(if (null? lst)
+		t
+		(if (not (func (car lst)))
+			nil
+			(all? func (cdr lst)))))
 (defun map [func lst]
 	(if (null? lst)
 		nil
@@ -122,7 +134,21 @@
 	(if (null? lst)
 		nil
 		(append (reverse (cdr lst)) (car lst))))
-
+(defun flatten (lst)
+	(cond 	((null? lst) nil)
+			((list? lst) (join (flatten (car lst)) (flatten (cdr lst))))
+			(t (list lst))))
+(defun nthmost [n lst]
+	(if (= 0 n)
+		lst
+		(most (nthmost (1- n) lst))))
+(defun partition (lst size &optional (step size) (runninglist nil))
+	(if (< (length lst) size)
+		runninglist
+		(partition (nthcdr step lst) size step (append runninglist 
+			(nthmost (- (length lst) size) lst)))))
+		
+		
 (defmacro when [pred body]
 	`(if ,pred ,body nil))
 (defmacro unless [pred body]

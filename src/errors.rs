@@ -6,7 +6,6 @@ pub enum LispError {
 	INVALID_ARGUMENT_TYPE(Datum, &'static str),
 	INVALID_NUMBER_OF_ARGS(usize, usize),
 	UNBOUND_VARIABLE(String),
-	INVALID_FORM(Datum),
 	UNKNOWN_FUNCTION(Datum),
 	INVALID_ARG_LIST(Datum),
 	OVERRIDE_RESERVED(Datum),
@@ -28,8 +27,6 @@ impl LispError {
 				format!("Invalid number of arguments: {} provided but {} expected", act, exp),
 			UNBOUND_VARIABLE(name) =>
 				format!("Unbound variable: No value set for {}", name),
-			INVALID_FORM(x) =>
-				format!("Invalid form: {} can not be evaluated", x),
 			UNKNOWN_FUNCTION(x) =>
 				format!("Unkown function: {} is not a known function or lambda expression", x),
 			INVALID_ARG_LIST(lst) =>
