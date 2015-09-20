@@ -61,6 +61,7 @@ pub fn div(args: Vec<Datum>) -> Result<Datum, LispError> {
 				return res;
 			}
 			match res.ok().unwrap() {
+				ATOM(NUMBER(m)) if m.val()==0. => Err(DIVISION_BY_ZERO),
 				ATOM(NUMBER(m))	=> Ok(ATOM(NUMBER((n/m).simplify()))),
 				ref e @ _		=> Err(INVALID_ARGUMENT_TYPE(e.clone(), "number"))
 			}
@@ -229,27 +230,27 @@ pub fn math_equal(args: Vec<Datum>) -> Result<Datum, LispError> {
 
 pub fn lisp_mod(args: Vec<Datum>) -> Result<Datum, LispError> {
 	if args.len() != 2 {
-		return Err(INVALID_NUMBER_OF_ARGS(args.len(), 2));
-	} 
-
-	if let ATOM(NUMBER(a)) = args[0] {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 2))
+	} else if let ATOM(NUMBER(a)) = args[0] {
 		if let ATOM(NUMBER(b)) = args[1] {
-			return Ok(ATOM(NUMBER(
-					a - b*INTEGER((a/b).val().floor() as i64))));
+			if b.val() == 0. {
+				Err(DIVISION_BY_ZERO)
+			} else {
+				Ok(ATOM(NUMBER(
+					a - b*INTEGER((a/b).val().floor() as i64))))
+			}
 		} else {
-			return Err(INVALID_ARGUMENT_TYPE(args[1].clone(), "number"));
+			Err(INVALID_ARGUMENT_TYPE(args[1].clone(), "number"))
 		}
 	} else {
-		return Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "number"));
+		Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "number"))
 	}
 }
 
 pub fn powi(args: Vec<Datum>) -> Result<Datum, LispError> {
 	if args.len() != 2 {
-		return Err(INVALID_NUMBER_OF_ARGS(args.len(), 2));
-	}
-
-	if let ATOM(NUMBER(a)) = args[0] {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 2))
+	} else if let ATOM(NUMBER(a)) = args[0] {
 		if let ATOM(NUMBER(INTEGER(b))) = args[1] {
 			Ok(ATOM(NUMBER(REAL(
 				a.val().powi(b as i32)).simplify())))
@@ -263,10 +264,8 @@ pub fn powi(args: Vec<Datum>) -> Result<Datum, LispError> {
 
 pub fn powr(args: Vec<Datum>) -> Result<Datum, LispError> {
 	if args.len() != 2 {
-		return Err(INVALID_NUMBER_OF_ARGS(args.len(), 2));
-	}
-
-	if let ATOM(NUMBER(a)) = args[0] {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 2))
+	} else if let ATOM(NUMBER(a)) = args[0] {
 		if let ATOM(NUMBER(b)) = args[1] {
 			Ok(ATOM(NUMBER(REAL(
 				a.val().powf(b.val())).simplify())))
@@ -280,10 +279,8 @@ pub fn powr(args: Vec<Datum>) -> Result<Datum, LispError> {
 
 pub fn floor(args: Vec<Datum>) -> Result<Datum, LispError> {
 	if args.len() != 1 {
-		return Err(INVALID_NUMBER_OF_ARGS(args.len(), 1));
-	}
-
-	if let ATOM(NUMBER(a)) = args[0] {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
+	} else if let ATOM(NUMBER(a)) = args[0] {
 		Ok(ATOM(NUMBER(REAL(a.val().floor()).simplify())))
 	} else {
 		Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "number"))
@@ -292,10 +289,8 @@ pub fn floor(args: Vec<Datum>) -> Result<Datum, LispError> {
 
 pub fn ceil(args: Vec<Datum>) -> Result<Datum, LispError> {
 	if args.len() != 1 {
-		return Err(INVALID_NUMBER_OF_ARGS(args.len(), 1));
-	}
-
-	if let ATOM(NUMBER(a)) = args[0] {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
+	} else if let ATOM(NUMBER(a)) = args[0] {
 		Ok(ATOM(NUMBER(REAL(a.val().ceil()).simplify())))
 	} else {
 		Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "number"))
@@ -422,10 +417,13 @@ pub fn not(args: Vec<Datum>) -> Result<Datum, LispError> {
 pub fn print(args: Vec<Datum>) -> Result<Datum, LispError> {
 	if args.len() != 1 {
 		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
-	} else {
+	} else if let ATOM(STRING(..)) = args[0] {
 		println!("{}", args[0]);
 		Ok(args[0].clone())
-	} 
+	} else {
+		println!("\"{}\"", args[0]);
+		Ok(args[0].clone())
+	}
 }
 
 pub fn most(args: Vec<Datum>) -> Result<Datum, LispError> {

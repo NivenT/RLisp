@@ -107,9 +107,9 @@ fn main() {
 			}
 			if min.1 <= 2 {
 				println!("Did you mean '{}'?", min.0);
-			} else {
+			} /*else {
 				println!("Did you mean '(QUOTE {})'?", name);
-			}
+			}*/
 		}
 		println!("");
 		

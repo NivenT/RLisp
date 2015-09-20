@@ -96,6 +96,11 @@ impl Env {
 		val
 	}
 
+	pub fn set_bot(&mut self, key: String, val: Datum) -> Datum {
+		self.env_stack[2].insert(key, val.clone());
+		val
+	}
+
 	pub fn push(&mut self) {
 		self.env_stack.push(HashMap::new());
 	}

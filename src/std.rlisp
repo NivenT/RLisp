@@ -76,13 +76,13 @@
 	(if (null? lst)
 		nil
 		(if (equal? (car lst) elem)
-			t
+			elem
 			(member elem (cdr lst)))))
 (defun assoc [elem lst]
 	(if (null? lst)
 		nil
-		(if (equal? (car (car lst)) elem)
-			(cdr (car lst))
+		(if (equal? (caar lst) elem)
+			(cdar lst)
 			(assoc elem (cdr lst)))))
 (defun any? [func lst]
 	(if (null? lst)
@@ -123,11 +123,9 @@
 		nil
 		(cons elem (make-list elem (1- size)))))
 (defun last [lst]
-	(if (null? lst)
-		nil
-		(if (null? (cdr lst))
-			(car lst)
-			(last (cdr lst)))))
+	(if (null? (cdr lst))
+		(car lst)
+		(last (cdr lst))))
 (defun complement [pred]
 	(lambda [x] (not (pred x))))
 (defun reverse [lst]
@@ -152,34 +150,30 @@
 (defmacro when [pred body]
 	`(if ,pred ,body nil))
 (defmacro unless [pred body]
-	`(if (not ,pred) ,body nil))
+	`(if ,pred nil ,body))
 (defmacro and [&rest preds]
 	`(if (null? (quote ,preds))
 		t
 		(if (car (quote ,preds))
 			(apply and (cdr (quote ,preds))))))
 (defmacro or [&rest preds]
-	`(if (null? (quote ,preds))
-		nil
+	`(unless (null? (quote ,preds))
 		(if (car (quote ,preds))
 			(car (quote ,preds))
 			(apply or (cdr (quote ,preds))))))
 (defmacro cond [&rest conditions]
-	`(if (null? (quote ,conditions))
-		nil
+	`(unless (null? (quote ,conditions))
 		(if (eval (caar (quote ,conditions)))
 			(eval (cadar (quote ,conditions)))
 			(apply cond (cdr (quote ,conditions))))))
 (defmacro dolist [var lst &rest body]
-	`(if (null? (quote ,lst))
-		nil
+	`(unless (null? (quote ,lst))
 		(progn (let ((,var (car (quote ,lst))))
 			(apply progn (quote ,body)))
 			(apply dolist (list* (quote ,var) (cdr (quote ,lst)) (quote 
 				,body))))))
 (defmacro dotimes [var start stop inc &rest body]
-	`(if (>= ,start ,stop)
-		nil
+	`(unless (>= ,start ,stop)
 		(progn (let ((,var ,start))
 			(apply progn (quote ,body)))
 			(apply dotimes (list* (quote ,var) (+ ,inc ,start) ,stop ,inc

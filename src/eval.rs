@@ -214,7 +214,7 @@ fn define(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 					match env.get(&sym) {
 						Ok(ref e @ FUNCTION(SPECIAL(_))) |
 						Ok(ref e @ FUNCTION(NATIVE(_))) => return Err(OVERRIDE_RESERVED(e.clone())),
-						_								=> return Ok(env.set(sym, res.ok().unwrap()))
+						_								=> return Ok(env.set_bot(sym, res.ok().unwrap()))
 					}
 				}
 			}
@@ -499,7 +499,7 @@ pub fn set(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 	if args.len() != 2 {
 		Err(INVALID_NUMBER_OF_ARGS(args.len(), 2))
 	} else if let ATOM(SYMBOL(name)) = args[0].clone() {
-		Ok(env.set(name, args[1].clone()))
+		Ok(env.set_bot(name, args[1].clone()))
 	} else {
 		Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "symbol"))
 	}
@@ -515,7 +515,7 @@ pub fn gensym(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 			return Ok(ATOM(SYMBOL(sym)));
 		}
 	}
-	Err(NO_INPUT) //never be reached
+	Err(NO_INPUT) //never reached
 }
 
 pub fn apply_lisp(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {

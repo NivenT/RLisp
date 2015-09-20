@@ -18,7 +18,8 @@ fn atomize(tkn: String) -> Atom {
 		let nums: Vec<String> = tkn.split('/').map(|s| s.to_string())
 								   .collect();
 		if nums[0].parse::<i64>().is_ok() && 
-		   nums[1].parse::<i64>().is_ok() {
+		   nums[1].parse::<i64>().is_ok() && 
+		   nums.len() == 2 {
 		   	NUMBER(RATIONAL(nums[0].parse::<i64>().unwrap(),
 		   					nums[1].parse::<i64>().unwrap()).simplify())
 		} else {SYMBOL(tkn)}
