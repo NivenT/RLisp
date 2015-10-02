@@ -73,36 +73,30 @@
 (defun list* [&rest lists]
 	(join (most lists) (last lists)))
 (defun member [elem lst]
-	(if (null? lst)
-		nil
+	(unless (null? lst)
 		(if (equal? (car lst) elem)
 			elem
 			(member elem (cdr lst)))))
 (defun assoc [elem lst]
-	(if (null? lst)
-		nil
+	(unless (null? lst)
 		(if (equal? (caar lst) elem)
 			(cdar lst)
 			(assoc elem (cdr lst)))))
 (defun any? [func lst]
-	(if (null? lst)
-		nil
+	(unless (null? lst)
 		(if (func (car lst))
 			(car lst)
 			(any? func (cdr lst)))))
 (defun all? [func lst]
 	(if (null? lst)
 		t
-		(if (not (func (car lst)))
-			nil
+		(unless (not (func (car lst)))
 			(all? func (cdr lst)))))
 (defun map [func lst]
-	(if (null? lst)
-		nil
+	(unless (null? lst)
 		(cons (func (car lst)) (map func (cdr lst)))))
 (defun filter [pred lst]
-	(if (null? lst)
-		nil
+	(unless (null? lst)
 		(if (pred (car lst))
 			(cons (car lst) (filter pred (cdr lst)))
 			(filter pred (cdr lst)))))
@@ -115,12 +109,10 @@
 		init
 		(foldr func (func (last lst) init) (most lst))))
 (defun range [min max &optional (step 1)]
-	(if (>= min max)
-		nil
+	(unless (>= min max)
 		(cons min (range (+ min step) max step))))
 (defun make-list [elem size]
-	(if (<= size 0)
-		nil
+	(unless (<= size 0)
 		(cons elem (make-list elem (1- size)))))
 (defun last [lst]
 	(if (null? (cdr lst))
@@ -140,11 +132,15 @@
 	(if (= 0 n)
 		lst
 		(most (nthmost (1- n) lst))))
-(defun partition (lst size &optional (step size) (runninglist nil))
+(defun partition [lst size &optional (step size) (runninglist nil)]
 	(if (< (length lst) size)
 		runninglist
 		(partition (nthcdr step lst) size step (append runninglist 
 			(nthmost (- (length lst) size) lst)))))
+(defun sublis [tree old new]
+	(cond	((equal? tree old) new)
+			((cons? tree) (cons (sublis (car tree) old new) (sublis (cdr tree) old new)))
+			(t tree)))
 		
 		
 (defmacro when [pred body]
