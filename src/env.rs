@@ -64,6 +64,10 @@ impl Env {
 		map.insert("EVAL".to_string(), FUNCTION(NATIVE(EVAL)));
 		map.insert("APPLY".to_string(), FUNCTION(NATIVE(APPLY)));
 
+		map.insert("RAND-INT".to_string(), FUNCTION(NATIVE(RANDINT)));
+		map.insert("RAND-BOOL".to_string(), FUNCTION(NATIVE(RANDBOOL)));
+		map.insert("RAND-REAL".to_string(), FUNCTION(NATIVE(RANDREAL)));	
+
 		map.insert("IF".to_string(), FUNCTION(SPECIAL(IF)));
 		map.insert("LET".to_string(), FUNCTION(SPECIAL(LET)));
 		map.insert("LET*".to_string(), FUNCTION(SPECIAL(LET_STAR)));

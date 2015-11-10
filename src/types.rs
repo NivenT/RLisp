@@ -358,7 +358,8 @@ pub enum Native {
 	SET,
 	GENSYM,
 	APPLY,
-	EVAL
+	EVAL,
+	RANDINT, RANDBOOL, RANDREAL
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

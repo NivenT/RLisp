@@ -1,3 +1,5 @@
+extern crate rand;
+
 use parser::*;
 use errors::*;
 use types::*;
@@ -8,6 +10,8 @@ use types::Number::*;
 use types::Datum::*;
 use types::List::*;
 use types::Atom::*;
+
+use rand::Rng;
 
 pub fn add(args: Vec<Datum>) -> Result<Datum, LispError> {
 	let mut sum = INTEGER(0);
@@ -445,5 +449,80 @@ pub fn most(args: Vec<Datum>) -> Result<Datum, LispError> {
 		Ok(LIST(List::from_vec(v)))
 	} else {
 		Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "list"))
+	}
+}
+
+pub fn rand_int(args: Vec<Datum>) -> Result<Datum, LispError> {
+	if args.len() == 1 {
+		if let ATOM(NUMBER(INTEGER(n))) = args[0].clone() {
+			if n > 0 {
+				Ok(ATOM(NUMBER(INTEGER(rand::thread_rng().gen_range(0,n)))))
+			} else {
+				Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "positive integer"))
+			}
+		} else {
+			Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "positive integer"))
+		}
+	} else if args.len() == 2 {
+		if let ATOM(NUMBER(INTEGER(m))) = args[0].clone() {
+			if let ATOM(NUMBER(INTEGER(n))) = args[1].clone() {
+				if n > m {
+					Ok(ATOM(NUMBER(INTEGER(rand::thread_rng().gen_range(m,n)))))
+				} else {
+					Ok(ATOM(NUMBER(INTEGER(rand::thread_rng().gen_range(n,m)))))
+				}
+			} else {
+				Err(INVALID_ARGUMENT_TYPE(args[1].clone(), "integer"))
+			}
+		} else {
+			Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "integer"))
+		}
+	} else {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
+	}
+}
+
+pub fn rand_bool(args: Vec<Datum>) -> Result<Datum, LispError> {
+	if args.len() != 0 {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 0))
+	} else if rand::random() {
+		Ok(LIST(NIL))
+	} else {
+		Ok(ATOM(T))
+	}
+}
+
+pub fn rand_real(args: Vec<Datum>) -> Result<Datum, LispError> {
+	if args.len() == 0 {
+		Ok(ATOM(NUMBER(REAL(rand::thread_rng().gen_range(0f64,1f64)))))
+	} else if args.len() == 1 {
+		if let ATOM(NUMBER(n)) = args[0].clone() {
+			if n.val() > 0f64 {
+				Ok(ATOM(NUMBER(REAL(
+					rand::thread_rng().gen_range(0f64,n.val())).simplify())))
+			} else {
+				Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "positive number"))
+			}
+		} else {
+			Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "positive number"))
+		}
+	} else if args.len() == 2 {
+		if let ATOM(NUMBER(m)) = args[0].clone() {
+			if let ATOM(NUMBER(n)) = args[1].clone() {
+				if n > m {
+					Ok(ATOM(NUMBER(REAL(
+						rand::thread_rng().gen_range(m.val(),n.val())).simplify())))
+				} else {
+					Ok(ATOM(NUMBER(REAL(
+						rand::thread_rng().gen_range(n.val(),m.val())).simplify())))
+				}
+			} else {
+				Err(INVALID_ARGUMENT_TYPE(args[1].clone(), "number"))
+			}
+		} else {
+			Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "number"))
+		}
+	} else {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
 	}
 }

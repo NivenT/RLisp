@@ -110,6 +110,9 @@ fn apply_native(func: &Native, args: Vec<Datum>, env: &mut Env) -> Result<Datum,
 		APPLY 				=> apply_lisp(items, env),
 		EVAL 				=> eval_lisp(items, env),
 		MOST 				=> most(items),
+		RANDINT				=> rand_int(items),
+		RANDBOOL			=> rand_bool(items),
+		RANDREAL			=> rand_real(items),
 		//_					=> Err(_NOT_YET_IMPLEMENTED(FUNCTION(NATIVE(*func))))
 	}
 }
