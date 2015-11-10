@@ -226,7 +226,7 @@ impl Number {
 					RATIONAL(a/d, b/d)
 				}
 			},
-			REAL(a) if a == a.floor() && a <= i64::MAX as f64 => 
+			REAL(a) if a == a.floor() && a <= i64::MAX as f64 && a >= i64::MIN as f64 => 
 				INTEGER(a as i64),
 			e @ _			=> e
 		}
@@ -378,9 +378,10 @@ pub enum Special {
 pub struct Lambda {
 	pub args: Vec<String>,
 	pub optn: Vec<(String, Datum)>,
+	pub key:  Vec<(String, Datum)>,
 	pub rest: Option<String>,
 	pub body: Box<Datum>,
-	pub env: HashMap<String, Datum>
+	pub env:  HashMap<String, Datum>
 }
 
 fn to_string(v: Vec<(String, Datum)>) -> String {
@@ -405,10 +406,21 @@ impl fmt::Display for Lambda {
 			s = format!("{}optional args: {}, ", 
 				s, to_string(self.optn.clone()))
 		}
+		if !self.key.is_empty() {
+			s = format!("{}key args: {}, ", 
+				s, to_string(self.key.clone()))
+		}
 		if self.rest != None {
 			s = format!("{}rest: {:?}, ", s, self.rest.clone().unwrap())
 		}
 		write!(f, "{}body: {}}}", s, self.body.clone())
+	}
+}
+
+impl Lambda {
+	pub fn contains_key(&self, name: String) -> bool {
+	    self.key.clone().into_iter().map(|keyval| keyval.0)
+	    .collect::<Vec<String>>().contains(&name)
 	}
 }
 

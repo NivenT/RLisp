@@ -138,13 +138,15 @@ fn min(a: usize, b: usize) -> usize {
 }
 
 fn apply_lambda(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
-	if (args.len() < func.args.len() || 
-	    args.len() > func.args.len()+func.optn.len()) &&
-	    func.rest == None {
+	if args.len() < func.args.len() {
 		return Err(INVALID_NUMBER_OF_ARGS(args.len(), func.args.len()));
 	}
 
 	let mut params: Vec<Datum> = Vec::with_capacity(func.args.len());
+	let mut optional_params: Vec<Datum> = Vec::with_capacity(func.optn.len());
+	let mut key_params: Vec<(String, Datum)> = Vec::with_capacity(func.key.len());
+	let mut rest_params: Vec<Datum> = Vec::new();
+
 	for i in 0..func.args.len() {
 		let res = eval(&args[i], env);
 		if res.is_err() {
@@ -153,22 +155,35 @@ fn apply_lambda(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum,
 			params.push(res.ok().unwrap());
 		}
 	}
-	let mut optional_params: Vec<Datum> = Vec::with_capacity(func.optn.len());
-	for i in func.args.len()..min(args.len(), func.args.len()+func.optn.len()) {
-		let res = eval(&args[i], env);
-		if res.is_err() {
-			return res;
-		} else {
-			optional_params.push(res.ok().unwrap());
+
+	let mut is_key = false;
+	let mut key_name = "";
+	for i in func.args.len()..args.len() {
+		if let ATOM(SYMBOL(ref name)) = args[i] {
+			if name.starts_with(':') && i != args.len()-1 {
+				let name = unsafe{
+					name.slice_unchecked(1,name.len())
+				};
+				if func.contains_key(name.to_string()) {
+					key_name = &name;
+					is_key = true;
+					continue;
+				}
+			} 
 		}
-	}
-	let mut rest_params: Vec<Datum> = Vec::new();
-	for i in func.args.len()+func.optn.len()..args.len() {
+
 		let res = eval(&args[i], env);
 		if res.is_err() {
 			return res;
-		} else {
+		} else if is_key {
+			key_params.push((key_name.to_string(), res.ok().unwrap()));
+			is_key = false;
+		} else if optional_params.len() != func.optn.len() {
+			optional_params.push(res.ok().unwrap());
+		} else if func.rest != None {
 			rest_params.push(res.ok().unwrap());
+		} else {
+			return Err(INVALID_NUMBER_OF_ARGS(args.len(), func.args.len()));
 		}
 	}
 
@@ -185,6 +200,16 @@ fn apply_lambda(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum,
 	}
 	for (param, arg) in optional_params.into_iter().zip(&func.optn) {
 		env.set(arg.0.clone(), param);
+	}
+	for (name, default) in func.key.clone() {
+		let res = eval(&default, env);
+		if res.is_err() {
+			return res;
+		}
+		env.set(name.clone(), res.ok().unwrap());
+	}
+	for (name, val) in key_params {
+		env.set(name, val);
 	}
 	if let Some(name) = func.rest.clone() {
 		env.set(name.clone(), LIST(List::from_vec(rest_params)));
@@ -271,33 +296,45 @@ fn lambda(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 	if let LIST(params) = args[0].clone() {
 		let mut arguments: Vec<String> = vec![];
 		let mut optn_args: Vec<(String, Datum)> = vec![];
+		let mut key_args: Vec<(String, Datum)> = vec![];
 		let mut rest_arg: Option<String> = None;
 		let params = params.get_items();
-		let mut mode: usize = 0; //(0 - normal, 1 - optional, 2 - rest)
+		let mut mode: usize = 0; //(0 - normal, 1 - optional,
+								 // 2 - rest, 3 - key)
 
 		for param in params {
 			if let ATOM(SYMBOL(name)) = param {
 				if name == "&OPTIONAL".to_string() {
-					mode = 1;
+					mode = 1
 				} else if name == "&REST".to_string() {
-					mode = 2;
+					mode = 2
+				} else if name == "&KEY".to_string() {
+					mode = 3
 				} else if mode == 1 {
-					optn_args.push((name, LIST(NIL)));
+					optn_args.push((name, LIST(NIL)))
 				} else if mode == 2 {
 					if rest_arg == None {
 						rest_arg = Some(name);
 					} else {
 						return Err(MULTIPLE_REST_ARGS);
 					}
+				} else if mode == 3 {
+					key_args.push((name, LIST(NIL)))
 				} else {
-					arguments.push(name);
+					arguments.push(name)
 				}
 			} else if let LIST(lst) = param.clone() {
 				let items = lst.get_items();
 				if items.len() != 2 {
 					return Err(INVALID_ARGUMENT_TYPE(param, "list of length 2"));
 				} else if let ATOM(SYMBOL(name)) = items[0].clone() {
-					optn_args.push((name, items[1].clone()));
+					if mode == 1 {
+						optn_args.push((name, items[1].clone()))
+					} else if mode == 3 {
+						key_args.push((name, items[1].clone()))
+					} else {
+						return Err(MISPLACED_DEFAULT_VALUE);
+					}
 				} else {
 					return Err(INVALID_ARGUMENT_TYPE(items[1].clone(), "symbol"));
 				}
@@ -309,6 +346,7 @@ fn lambda(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 		return Ok(FUNCTION(LAMBDA(
 					Lambda{args: arguments,
 						   optn: optn_args,
+						   key:  key_args,
 						   rest: rest_arg,
 						   body: Box::new(args[1].clone()),
 						   env: env.top().into_iter()

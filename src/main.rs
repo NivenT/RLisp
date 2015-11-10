@@ -1,4 +1,5 @@
 extern crate time;
+extern crate rand;
 
 mod native;
 mod parser;
@@ -15,6 +16,7 @@ use env::*;
 
 use errors::LispError::*;
 
+use rand::Rng;
 use std::io;
 use std::io::prelude::*;
 
@@ -101,7 +103,7 @@ fn main() {
 			let mut min = ("".to_string(), 99999);
 			for (key, _) in env.join() {
 				let score = levenshtein(&key, &name, 0, 3);
-				if score < min.1 {
+				if score < min.1 || (score == min.1 && rand::thread_rng().gen_range(0,2) == 1) {
 					min = (key, score);
 				}
 			}

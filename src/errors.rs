@@ -12,6 +12,7 @@ pub enum LispError {
 	CANNOT_OPEN_FILE(String),
 	_NOT_YET_IMPLEMENTED(Datum),
 	MULTIPLE_REST_ARGS,
+	MISPLACED_DEFAULT_VALUE,
 	DIVISION_BY_ZERO,
 	MISMATCHED_BRACKETS,
 	NO_INPUT
@@ -40,6 +41,8 @@ impl LispError {
 				format!("{} has not been implemented yet", x),
 			MULTIPLE_REST_ARGS =>
 				format!("Error: arg list should contain at most 1 &rest argument"),
+			MISPLACED_DEFAULT_VALUE =>
+				format!("Error: arg list only supports default values for &optional and &key arguments"),
 			DIVISION_BY_ZERO =>
 				format!("Attempted to divide by zero"),
 			MISMATCHED_BRACKETS =>

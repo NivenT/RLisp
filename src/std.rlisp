@@ -108,9 +108,9 @@
 	(if (null? lst)
 		init
 		(foldr func (func (last lst) init) (most lst))))
-(defun range [min max &optional (step 1)]
+(defun range [max &key (step 1) (min 0)]
 	(unless (>= min max)
-		(cons min (range (+ min step) max step))))
+		(cons min (range max :step step :min (+ min step)))))
 (defun make-list [elem size]
 	(unless (<= size 0)
 		(cons elem (make-list elem (1- size)))))
@@ -141,6 +141,26 @@
 	(cond	((equal? tree old) new)
 			((cons? tree) (cons (sublis (car tree) old new) (sublis (cdr tree) old new)))
 			(t tree)))
+(defun unique [lst]
+	(unless (null? lst)
+		(if (member (car lst) (cdr lst))
+			(unique (cdr lst))
+			(cons (car lst) (unique (cdr lst))))))
+(defun union [lst1 lst2]
+	(unique (join lst1 lst2)))
+(defun intersect [lst1 lst2]
+	(unless (null? lst1)
+		(if (member (car lst1) lst2)
+			(cons (car lst1) (intersect (cdr lst1) lst2))
+			(intersect (cdr lst1) lst2))))
+(defun set-difference [lst1 lst2]
+	(unless (null? lst1)
+		(if (member (car lst1) lst2)
+			(set-difference (cdr lst1) lst2)
+			(cons (car lst1) (set-difference (cdr lst1) lst2)))))
+(defun set-sym-difference [lst1 lst2]
+	(union (set-difference lst1 lst2) (set-difference lst2 lst1)))
+			
 		
 		
 (defmacro when [pred body]

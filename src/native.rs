@@ -21,21 +21,25 @@ pub fn add(args: Vec<Datum>) -> Result<Datum, LispError> {
 }
 
 pub fn sub(args: Vec<Datum>) -> Result<Datum, LispError> {
-	match args[0] {
-		ATOM(NUMBER(n))	=> {
-			if args.len() == 1 {
-				return Ok(ATOM(NUMBER(-n)))
-			}
-			let res = add(tail(args));
-			if res.is_err() {
-				return res;
-			}
-			match res.ok().unwrap() {
-				ATOM(NUMBER(m))	=> Ok(ATOM(NUMBER((n-m).simplify()))),
-				ref e @ _		=> Err(INVALID_ARGUMENT_TYPE(e.clone(), "number"))
-			}
-		},
-		_				=> Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "number"))
+	if args.len() == 0 {
+		Err(INVALID_NUMBER_OF_ARGS(0,1))
+	} else {
+		match args[0] {
+			ATOM(NUMBER(n))	=> {
+				if args.len() == 1 {
+					return Ok(ATOM(NUMBER(-n)))
+				}
+				let res = add(tail(args));
+				if res.is_err() {
+					return res;
+				}
+				match res.ok().unwrap() {
+					ATOM(NUMBER(m))	=> Ok(ATOM(NUMBER((n-m).simplify()))),
+					ref e @ _		=> Err(INVALID_ARGUMENT_TYPE(e.clone(), "number"))
+				}
+			},
+			_				=> Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "number"))
+		}
 	}
 }
 
@@ -51,22 +55,26 @@ pub fn mul(args: Vec<Datum>) -> Result<Datum, LispError> {
 }
 
 pub fn div(args: Vec<Datum>) -> Result<Datum, LispError> {
-	match args[0] {
-		ATOM(NUMBER(n))	=> {
-			if args.len() == 1 {
-				return Ok(ATOM(NUMBER(INTEGER(1)/n)))
-			}
-			let res = mul(tail(args));
-			if res.is_err() {
-				return res;
-			}
-			match res.ok().unwrap() {
-				ATOM(NUMBER(m)) if m.val()==0. => Err(DIVISION_BY_ZERO),
-				ATOM(NUMBER(m))	=> Ok(ATOM(NUMBER((n/m).simplify()))),
-				ref e @ _		=> Err(INVALID_ARGUMENT_TYPE(e.clone(), "number"))
-			}
-		},
-		_				=> Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "number"))
+	if args.len() == 0 {
+		Err(INVALID_NUMBER_OF_ARGS(0,1))
+	} else {
+		match args[0] {
+			ATOM(NUMBER(n))	=> {
+				if args.len() == 1 {
+					return Ok(ATOM(NUMBER(INTEGER(1)/n)))
+				}
+				let res = mul(tail(args));
+				if res.is_err() {
+					return res;
+				}
+				match res.ok().unwrap() {
+					ATOM(NUMBER(m)) if m.val()==0. => Err(DIVISION_BY_ZERO),
+					ATOM(NUMBER(m))	=> Ok(ATOM(NUMBER((n/m).simplify()))),
+					ref e @ _		=> Err(INVALID_ARGUMENT_TYPE(e.clone(), "number"))
+				}
+			},
+			_				=> Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "number"))
+		}
 	}
 }
 
