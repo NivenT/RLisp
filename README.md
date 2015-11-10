@@ -9,6 +9,8 @@ Install [Rust](https://www.rust-lang.org/) and then navigate to the src director
 ## How to Use
 Because this is a Lisp Interpreter, it makes use of a REPL. Enter your command and hit enter to see the result. Afterwards, repeat. Press Ctrl+c to quit.
 
+Check the src/std.rlisp for examples of valid code
+
 ## Native Functions/Special Forms (Incomplete list)
 Function | Description | Example input | Corresponding output
 --- | --- | --- | ---
