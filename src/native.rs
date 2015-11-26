@@ -13,6 +13,9 @@ use types::Atom::*;
 
 use rand::Rng;
 
+use term_painter::ToStyle;
+use term_painter::Color::*;
+
 pub fn add(args: Vec<Datum>) -> Result<Datum, LispError> {
 	let mut sum = INTEGER(0);
 	for item in args {
@@ -429,11 +432,8 @@ pub fn not(args: Vec<Datum>) -> Result<Datum, LispError> {
 pub fn print(args: Vec<Datum>) -> Result<Datum, LispError> {
 	if args.len() != 1 {
 		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
-	} else if let ATOM(STRING(..)) = args[0] {
-		println!("{}", args[0]);
-		Ok(args[0].clone())
 	} else {
-		println!("\"{}\"", args[0]);
+		println!("{}", Red.paint(args[0].clone()));
 		Ok(args[0].clone())
 	}
 }

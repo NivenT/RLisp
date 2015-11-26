@@ -160,8 +160,18 @@
 			(cons (car lst1) (set-difference (cdr lst1) lst2)))))
 (defun set-sym-difference [lst1 lst2]
 	(union (set-difference lst1 lst2) (set-difference lst2 lst1)))
-			
-		
+(defun gcd [a b]
+	(cond 	((> b a) (gcd b a))
+			((= b 0) a)
+			(t (gcd b (mod a b)))))
+(defun slice (lst start end)
+	(cond	((null lst) lst)
+			((= end 0) nil)
+			((< end 0) (slice lst start (+ end (length lst))))
+			((< start 0) (slice lst (+ start (length lst)) end))
+			((< end start) nil)
+			((= start 0) (cons (car lst) (slice (cdr lst) 0 (1- end))))
+			(t (slice (cdr lst) (1- start) (1- end)))))
 		
 (defmacro when [pred body]
 	`(if ,pred ,body nil))
@@ -183,14 +193,10 @@
 			(eval (cadar (quote ,conditions)))
 			(apply cond (cdr (quote ,conditions))))))
 (defmacro dolist [var lst &rest body]
-	`(unless (null? (quote ,lst))
-		(progn (let ((,var (car (quote ,lst))))
+	`(unless (null? ,lst)
+		(progn (let ((,var (car ,lst)))
 			(apply progn (quote ,body)))
-			(apply dolist (list* (quote ,var) (cdr (quote ,lst)) (quote 
+			(apply dolist (list* (quote ,var) (quote (quote ,(cdadr lst))) (quote 
 				,body))))))
 (defmacro dotimes [var start stop inc &rest body]
-	`(unless (>= ,start ,stop)
-		(progn (let ((,var ,start))
-			(apply progn (quote ,body)))
-			(apply dotimes (list* (quote ,var) (+ ,inc ,start) ,stop ,inc
-				(quote ,body))))))
+	`(apply dolist (list* (quote ,var) (quote ,(range stop :min start :step inc)) (quote ,body))))

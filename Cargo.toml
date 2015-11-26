@@ -6,3 +6,4 @@ authors = ["NivenT <nachenjang@gmail.com>"]
 [dependencies]
 time = "*"
 rand = "*"
+term-painter = "*"

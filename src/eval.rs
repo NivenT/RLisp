@@ -136,10 +136,6 @@ fn apply_special(func: &Special, args: Vec<Datum>, env: &mut Env) -> Result<Datu
 	}
 }
 
-fn min(a: usize, b: usize) -> usize {
-	if a<b {a} else {b}
-}
-
 fn apply_lambda(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 	if args.len() < func.args.len() {
 		return Err(INVALID_NUMBER_OF_ARGS(args.len(), func.args.len()));
@@ -164,13 +160,13 @@ fn apply_lambda(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum,
 	for i in func.args.len()..args.len() {
 		if let ATOM(SYMBOL(ref name)) = args[i] {
 			if name.starts_with(':') && i != args.len()-1 {
-				let name = unsafe{
-					name.slice_unchecked(1,name.len())
-				};
-				if func.contains_key(name.to_string()) {
-					key_name = &name;
-					is_key = true;
-					continue;
+				let name = &name[1..];
+				if func.contains_key(name.to_string()) && !is_key {
+					if !key_params.clone().into_iter().any(|(key, _): (String,_)| key==":".to_string()+name) {
+						key_name = &name;
+						is_key = true;
+						continue;
+					}
 				}
 			} 
 		}
@@ -240,9 +236,9 @@ fn define(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 					return res;
 				} else {
 					match env.get(&sym) {
-						Ok(ref e @ FUNCTION(SPECIAL(_))) |
-						Ok(ref e @ FUNCTION(NATIVE(_))) => return Err(OVERRIDE_RESERVED(e.clone())),
-						_								=> return Ok(env.set_bot(sym, res.ok().unwrap()))
+						Ok(FUNCTION(SPECIAL(_))) | Ok(FUNCTION(NATIVE(_))) 
+							=> return Err(OVERRIDE_RESERVED(sym)),
+						_ 	=> return Ok(env.set_bot(sym, res.ok().unwrap()))
 					}
 				}
 			}
@@ -353,8 +349,8 @@ fn lambda(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 						   rest: rest_arg,
 						   body: Box::new(args[1].clone()),
 						   env: env.top().into_iter()
-						   		   .filter(|keyval| 
-						   		   		lambda_contains(keyval.0.clone(),
+						   		   .filter(|&(ref key, _)| 
+						   		   		lambda_contains(key.clone(),
 						   		   						args[1].clone()))
 						   		   .collect()}
 					)));
@@ -373,9 +369,9 @@ fn defun(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 		return lam;
 	} else if let ATOM(SYMBOL(name)) = args[0].clone() {
 		match env.get(&name) {
-			Ok(ref e @ FUNCTION(SPECIAL(_))) |
-			Ok(ref e @ FUNCTION(NATIVE(_))) => return Err(OVERRIDE_RESERVED(e.clone())),
-			_								=> return Ok(env.set(name, lam.ok().unwrap()))
+			Ok(FUNCTION(SPECIAL(_))) | Ok(FUNCTION(NATIVE(_))) 
+				=> return Err(OVERRIDE_RESERVED(name)),
+			_	=> return Ok(env.set(name, lam.ok().unwrap()))
 		}
 	} else {
 		return Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "symbol"))
@@ -540,7 +536,11 @@ pub fn set(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 	if args.len() != 2 {
 		Err(INVALID_NUMBER_OF_ARGS(args.len(), 2))
 	} else if let ATOM(SYMBOL(name)) = args[0].clone() {
-		Ok(env.set_bot(name, args[1].clone()))
+		match env.get(&name) {
+			Ok(FUNCTION(SPECIAL(_))) | Ok(FUNCTION(NATIVE(_))) 
+				=> return Err(OVERRIDE_RESERVED(name)),
+			_ 	=> return Ok(env.set_bot(name, args[1].clone()))
+		}
 	} else {
 		Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "symbol"))
 	}
@@ -600,9 +600,9 @@ fn defmacro(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 		return mac;
 	} else if let ATOM(SYMBOL(name)) = args[0].clone() {
 		match env.get(&name) {
-			Ok(ref e @ FUNCTION(SPECIAL(_))) |
-			Ok(ref e @ FUNCTION(NATIVE(_))) => return Err(OVERRIDE_RESERVED(e.clone())),
-			_								=> return Ok(env.set(name, mac.ok().unwrap()))
+			Ok(FUNCTION(SPECIAL(_))) | Ok(FUNCTION(NATIVE(_))) 
+				=> return Err(OVERRIDE_RESERVED(name)),
+			_	=> return Ok(env.set(name, mac.ok().unwrap()))
 		}
 	} else {
 		return Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "symbol"))
@@ -628,23 +628,45 @@ fn macroexpand(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 }
 
 fn macroexpand_helper(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
-	if (args.len() < func.args.len() || 
-	    args.len() > func.args.len()+func.optn.len()) &&
-	    func.rest == None {
+	if args.len() < func.args.len() {
 		return Err(INVALID_NUMBER_OF_ARGS(args.len(), func.args.len()));
 	}
 
 	let mut params: Vec<Datum> = Vec::with_capacity(func.args.len());
+	let mut optional_params: Vec<Datum> = Vec::with_capacity(func.optn.len());
+	let mut key_params: Vec<(String, Datum)> = Vec::with_capacity(func.key.len());
+	let mut rest_params: Vec<Datum> = Vec::new();
+
 	for i in 0..func.args.len() {
 		params.push(args[i].clone())
 	}
-	let mut optional_params: Vec<Datum> = Vec::with_capacity(func.optn.len());
-	for i in func.args.len()..min(args.len(), func.args.len()+func.optn.len()) {
-		optional_params.push(args[i].clone())
-	}
-	let mut rest_params: Vec<Datum> = Vec::new();
-	for i in func.args.len()+func.optn.len()..args.len() {
-		rest_params.push(args[i].clone())
+
+	let mut is_key = false;
+	let mut key_name = "";
+	for i in func.args.len()..args.len() {
+		if let ATOM(SYMBOL(ref name)) = args[i] {
+			if name.starts_with(':') && i != args.len()-1 {
+				let name = &name[1..];
+				if func.contains_key(name.to_string()) && !is_key {
+					if !key_params.clone().into_iter().any(|(key, _): (String,_)| key==":".to_string()+name) {
+						key_name = &name;
+						is_key = true;
+						continue;
+					}
+				}
+			} 
+		}
+
+		if is_key {
+			key_params.push((key_name.to_string(), args[i].clone()));
+			is_key = false;
+		} else if optional_params.len() != func.optn.len() {
+			optional_params.push(args[i].clone());
+		} else if func.rest != None {
+			rest_params.push(args[i].clone());
+		} else {
+			return Err(INVALID_NUMBER_OF_ARGS(args.len(), func.args.len()));
+		}
 	}
 
 	env.push_map(&func.env);
@@ -652,17 +674,19 @@ fn macroexpand_helper(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<
 		env.set(arg.clone(), param);
 	}
 	for (name, default) in func.optn.clone() {
-		let res = eval(&default, env);
-		if res.is_err() {
-			return res;
-		}
-		env.set(name.clone(), res.ok().unwrap());
+		env.set(name.clone(), default);
 	}
 	for (param, arg) in optional_params.into_iter().zip(&func.optn) {
 		env.set(arg.0.clone(), param);
 	}
+	for (name, default) in func.key.clone() {
+		env.set(name.clone(), default);
+	}
+	for (name, val) in key_params {
+		env.set(name, val);
+	}
 	if let Some(name) = func.rest.clone() {
-		env.set(name, LIST(List::from_vec(rest_params)));
+		env.set(name.clone(), LIST(List::from_vec(rest_params)));
 	}
 	let res = eval(&func.body, env);
 	env.pop();
