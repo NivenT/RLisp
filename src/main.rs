@@ -87,7 +87,7 @@ fn main() {
 						io::stdin().read_line(&mut next_line).ok()
 								   .expect("Failed to read line");
 						input = format!("{}\n\t{}", input, next_line);
-					} else if input == "\r\n".to_string() {
+					} else if input.trim() == "".to_string() {
 						result = Err(NO_INPUT); break
 					} else {break}
 				},
@@ -98,7 +98,14 @@ fn main() {
 		   result != Err(NO_INPUT) {
 			result = eval(&parse(&mut tokenize(&input)), &mut env)
 		} match result {
-			Ok(ref a) 	=> {println!("{}", *a); env.set("%%%".to_string(), a.clone());},
+			Ok(ref a) 	=> {
+				if let Datum::ATOM(Atom::STRING(ref s)) = *a {
+					println!("\"{}\"", s);
+				} else {
+					println!("{}", *a);
+				}
+				env.set("%%%".to_string(), a.clone());
+			},
 			Err(ref a)	=> println!("{}", Blue.paint(a.message()))
 		} if let Err(UNBOUND_VARIABLE(name)) = result.clone() {
 			let mut min = ("".to_string(), 99999);

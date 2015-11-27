@@ -254,7 +254,7 @@ impl fmt::Display for Atom {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match *self {
 			SYMBOL(ref a)	=> write!(f, "{}", a),
-			STRING(ref a)	=> write!(f, "\"{}\"", a),
+			STRING(ref a)	=> write!(f, "{}", a),
 			NUMBER(ref a)	=> write!(f, "{}", a),
 			T 				=> write!(f, "T")
 		}
@@ -353,7 +353,7 @@ pub enum Native {
 	TYPE,
 	IS_ATOM, IS_LIST, IS_CONS, IS_SYMBOL,
 	EQUAL,
-	WRITE_TO_STRING, READ_FROM_STRING, STRING_CONCAT, PRINT,
+	WRITE_TO_STRING, READ_FROM_STRING, STRING_CONCAT, PRINT, FORMAT,
 	NOT,
 	SET,
 	GENSYM,

@@ -10,6 +10,7 @@ pub enum LispError {
 	INVALID_ARG_LIST(Datum),
 	OVERRIDE_RESERVED(String),
 	CANNOT_OPEN_FILE(String),
+	INVALID_NUMBER_OF_FORMAT_PARAMS(usize, usize),
 	_NOT_YET_IMPLEMENTED(Datum),
 	MULTIPLE_REST_ARGS,
 	MISPLACED_DEFAULT_VALUE,
@@ -37,6 +38,8 @@ impl LispError {
 				format!("Cannot open file: {}", reason),
 			OVERRIDE_RESERVED(x) =>
 				format!("Attempted to override reserved symbol: {}", x),
+			INVALID_NUMBER_OF_FORMAT_PARAMS(act, exp) =>
+				format!("Invalid number of format parameters: {} provided but {} expected", act, exp),
 			_NOT_YET_IMPLEMENTED(x) =>
 				format!("{} has not been implemented yet", x),
 			MULTIPLE_REST_ARGS =>

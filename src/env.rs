@@ -57,6 +57,7 @@ impl Env {
 		map.insert("READ-FROM-STRING".to_string(), FUNCTION(NATIVE(READ_FROM_STRING)));
 		map.insert("STRING-CONCAT".to_string(), FUNCTION(NATIVE(STRING_CONCAT)));
 		map.insert("PRINT".to_string(), FUNCTION(NATIVE(PRINT)));
+		map.insert("FORMAT".to_string(), FUNCTION(NATIVE(FORMAT)));
 
 		map.insert("NOT".to_string(), FUNCTION(NATIVE(NOT)));
 		map.insert("SET".to_string(), FUNCTION(NATIVE(SET)));

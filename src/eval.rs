@@ -113,6 +113,7 @@ fn apply_native(func: &Native, args: Vec<Datum>, env: &mut Env) -> Result<Datum,
 		RANDINT				=> rand_int(items),
 		RANDBOOL			=> rand_bool(items),
 		RANDREAL			=> rand_real(items),
+		FORMAT 				=> format(items),
 		//_					=> Err(_NOT_YET_IMPLEMENTED(FUNCTION(NATIVE(*func))))
 	}
 }

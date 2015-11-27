@@ -16,6 +16,8 @@ use rand::Rng;
 use term_painter::ToStyle;
 use term_painter::Color::*;
 
+use std::fmt;
+
 pub fn add(args: Vec<Datum>) -> Result<Datum, LispError> {
 	let mut sum = INTEGER(0);
 	for item in args {
@@ -432,6 +434,9 @@ pub fn not(args: Vec<Datum>) -> Result<Datum, LispError> {
 pub fn print(args: Vec<Datum>) -> Result<Datum, LispError> {
 	if args.len() != 1 {
 		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
+	} else if let ATOM(STRING(s)) = args[0].clone() {
+		println!("\"{}\"", Red.paint(s));
+		Ok(args[0].clone())
 	} else {
 		println!("{}", Red.paint(args[0].clone()));
 		Ok(args[0].clone())
@@ -524,5 +529,29 @@ pub fn rand_real(args: Vec<Datum>) -> Result<Datum, LispError> {
 		}
 	} else {
 		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
+	}
+}
+
+fn format_vec<T>(s: &str, v: Vec<T>) -> String where T: fmt::Display + Clone {
+	if let Some(pos) = s.find("{}") {
+		format!("{}{}{}", &s[..pos], v[0], format_vec(&s[pos+2..], v[1..].to_vec()))
+	} else {
+		s.to_string()
+	}
+}
+
+pub fn format(args: Vec<Datum>) -> Result<Datum, LispError> {
+	if args.len() < 1 {
+		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
+	} else if let ATOM(STRING(s)) = args[0].clone() {
+		let count = s.split("{}").count();
+		if count == args.len() {
+			let format_args = args[1..].to_vec();
+			Ok(ATOM(STRING(format_vec(&s, format_args))))
+		} else {
+			Err(INVALID_NUMBER_OF_FORMAT_PARAMS(args.len()-1, count-1))
+		}
+	} else {
+		Err(INVALID_ARGUMENT_TYPE(args[0].clone(), "string"))
 	}
 }
