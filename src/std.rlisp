@@ -165,7 +165,7 @@
 			((= b 0) a)
 			(t (gcd b (mod a b)))))
 (defun slice (lst start end)
-	(cond	((null lst) lst)
+	(cond	((null? lst) lst)
 			((= end 0) nil)
 			((< end 0) (slice lst start (+ end (length lst))))
 			((< start 0) (slice lst (+ start (length lst)) end))
@@ -173,30 +173,30 @@
 			((= start 0) (cons (car lst) (slice (cdr lst) 0 (1- end))))
 			(t (slice (cdr lst) (1- start) (1- end)))))
 		
-(defmacro when [pred body]
-	`(if ,pred ,body nil))
-(defmacro unless [pred body]
-	`(if ,pred nil ,body))
+(defmacro when [pred &rest body]
+	(if pred (apply progn 'body) nil))
+(defmacro unless [pred &rest body]
+	(if pred nil (apply progn 'body)))
 (defmacro and [&rest preds]
-	`(if (null? (quote ,preds))
+	(if (null? 'preds)
 		t
-		(if (car (quote ,preds))
-			(apply and (cdr (quote ,preds))))))
+		(if (eval (car 'preds))
+			(apply and (cdr 'preds)))))
 (defmacro or [&rest preds]
-	`(unless (null? (quote ,preds))
-		(if (car (quote ,preds))
-			(car (quote ,preds))
-			(apply or (cdr (quote ,preds))))))
+	(unless (null? 'preds)
+		(if (eval (car 'preds))
+			(eval (car 'preds))
+			(apply or (cdr 'preds)))))
 (defmacro cond [&rest conditions]
-	`(unless (null? (quote ,conditions))
-		(if (eval (caar (quote ,conditions)))
-			(eval (cadar (quote ,conditions)))
-			(apply cond (cdr (quote ,conditions))))))
+	(unless (null? 'conditions)
+		(if (eval (caar 'conditions))
+			(eval (cadar 'conditions))
+			(apply cond (cdr 'conditions)))))
 (defmacro dolist [var lst &rest body]
-	`(unless (null? ,lst)
-		(progn (let ((,var (car ,lst)))
-			(apply progn (quote ,body)))
-			(apply dolist (list* (quote ,var) (quote (quote ,(cdadr lst))) (quote 
-				,body))))))
+	(unless (null? lst)
+		(progn
+			(let ((var (car lst)))
+				(apply progn 'body))
+			(apply dolist (list* 'var '(cdr lst) 'body)))))
 (defmacro dotimes [var start stop inc &rest body]
-	`(apply dolist (list* (quote ,var) (quote ,(range stop :min start :step inc)) (quote ,body))))
+	(apply dolist (list* 'var '(range stop :min start :step inc) 'body)))

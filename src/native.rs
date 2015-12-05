@@ -38,7 +38,7 @@ pub fn sub(args: Vec<Datum>) -> Result<Datum, LispError> {
 				if args.len() == 1 {
 					return Ok(ATOM(NUMBER(-n)))
 				}
-				let res = add(tail(args));
+				let res = add(args[1..].to_vec());
 				if res.is_err() {
 					return res;
 				}
@@ -72,7 +72,7 @@ pub fn div(args: Vec<Datum>) -> Result<Datum, LispError> {
 				if args.len() == 1 {
 					return Ok(ATOM(NUMBER(INTEGER(1)/n)))
 				}
-				let res = mul(tail(args));
+				let res = mul(args[1..].to_vec());
 				if res.is_err() {
 					return res;
 				}
@@ -434,9 +434,6 @@ pub fn not(args: Vec<Datum>) -> Result<Datum, LispError> {
 pub fn print(args: Vec<Datum>) -> Result<Datum, LispError> {
 	if args.len() != 1 {
 		Err(INVALID_NUMBER_OF_ARGS(args.len(), 1))
-	} else if let ATOM(STRING(s)) = args[0].clone() {
-		println!("\"{}\"", Red.paint(s));
-		Ok(args[0].clone())
 	} else {
 		println!("{}", Red.paint(args[0].clone()));
 		Ok(args[0].clone())
@@ -532,9 +529,9 @@ pub fn rand_real(args: Vec<Datum>) -> Result<Datum, LispError> {
 	}
 }
 
-fn format_vec<T>(s: &str, v: Vec<T>) -> String where T: fmt::Display + Clone {
+fn format_vec<T>(s: &str, v: Vec<T>) -> String where T: fmt::Binary + Clone {
 	if let Some(pos) = s.find("{}") {
-		format!("{}{}{}", &s[..pos], v[0], format_vec(&s[pos+2..], v[1..].to_vec()))
+		format!("{}{:b}{}", &s[..pos], v[0], format_vec(&s[pos+2..], v[1..].to_vec()))
 	} else {
 		s.to_string()
 	}

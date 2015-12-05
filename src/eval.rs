@@ -220,7 +220,7 @@ fn apply_lambda(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum,
 }
 
 fn apply_macro(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
-	let res = macroexpand_helper(func, args, env);
+	let res = macroexpand_helper(func, args);
 	if res.is_err() {
 		res
 	} else {
@@ -619,7 +619,7 @@ fn macroexpand(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 		if func.is_err() {
 			func
 		} else if let Ok(FUNCTION(MACRO(mac))) = func {
-			macroexpand_helper(&mac, tail(items), env)
+			macroexpand_helper(&mac, items[1..].to_vec())
 		} else {
 			Err(INVALID_ARGUMENT_TYPE(func.ok().unwrap(), "macro"))
 		}
@@ -628,7 +628,19 @@ fn macroexpand(args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
 	}
 }
 
-fn macroexpand_helper(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<Datum, LispError> {
+fn sublis(old: &Datum, new: &Datum, tree: Datum) -> Datum {
+	if tree == *old {
+		new.clone()
+	} else if let LIST(CONS(ref car, ref cdr)) = tree {
+		LIST(CONS(
+			Box::new(sublis(old, new, *car.clone())),
+			Box::new(sublis(old, new, *cdr.clone()))))
+	} else {
+		tree
+	}
+}
+
+fn macroexpand_helper(func: &Lambda, args: Vec<Datum>) -> Result<Datum, LispError> {
 	if args.len() < func.args.len() {
 		return Err(INVALID_NUMBER_OF_ARGS(args.len(), func.args.len()));
 	}
@@ -670,26 +682,27 @@ fn macroexpand_helper(func: &Lambda, args: Vec<Datum>, env: &mut Env) -> Result<
 		}
 	}
 
-	env.push_map(&func.env);
+	let mut ret: Datum = *func.body.clone();
 	for (param, arg) in params.into_iter().zip(&func.args) {
-		env.set(arg.clone(), param);
+		ret = sublis(&ATOM(SYMBOL(arg.clone())), &param, ret);
 	}
-	for (name, default) in func.optn.clone() {
-		env.set(name.clone(), default);
+	for (name, default) in func.optn.clone()[optional_params.len()..].to_vec() {
+		ret = sublis(&ATOM(SYMBOL(name)), &default, ret);
 	}
 	for (param, arg) in optional_params.into_iter().zip(&func.optn) {
-		env.set(arg.0.clone(), param);
+		ret = sublis(&ATOM(SYMBOL(arg.0.clone())), &param, ret);
 	}
-	for (name, default) in func.key.clone() {
-		env.set(name.clone(), default);
+	for (name, default) in 
+		func.key.clone().into_iter().filter(|&(ref n,_)| 
+			!key_params.clone().into_iter().map(|x| x.0)
+					   .collect::<Vec<_>>().contains(&n)) {
+		ret = sublis(&ATOM(SYMBOL(name)), &default, ret);
 	}
 	for (name, val) in key_params {
-		env.set(name, val);
+		ret = sublis(&ATOM(SYMBOL(name)), &val, ret);
 	}
 	if let Some(name) = func.rest.clone() {
-		env.set(name.clone(), LIST(List::from_vec(rest_params)));
+		ret = sublis(&ATOM(SYMBOL(name)), &LIST(List::from_vec(rest_params)), ret);
 	}
-	let res = eval(&func.body, env);
-	env.pop();
-	res
+	Ok(ret)
 }

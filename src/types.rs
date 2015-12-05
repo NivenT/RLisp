@@ -4,10 +4,6 @@ use std::cmp;
 
 use std::collections::HashMap;
 
-pub fn tail<T>(vec: Vec<T>) -> Vec<T> {
-	vec.into_iter().skip(1).collect()
-}
-
 #[derive(Clone, Debug, PartialEq)]
 pub enum Datum {
 	ATOM(Atom),
@@ -23,6 +19,15 @@ impl fmt::Display for Datum {
 			FUNCTION(ref a)	=> write!(f, "{}", a),
 			ATOM(ref a)		=> write!(f, "{}", a),
 			LIST(ref a)		=> write!(f, "{}", a)
+		}
+	}
+}
+
+impl fmt::Binary for Datum {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match *self {
+		    ATOM(STRING(ref s))	=> write!(f, "{}", s),
+		    _					=> write!(f, "{}", self)
 		}
 	}
 }
@@ -254,7 +259,7 @@ impl fmt::Display for Atom {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match *self {
 			SYMBOL(ref a)	=> write!(f, "{}", a),
-			STRING(ref a)	=> write!(f, "{}", a),
+			STRING(ref a)	=> write!(f, "\"{}\"", a),
 			NUMBER(ref a)	=> write!(f, "{}", a),
 			T 				=> write!(f, "T")
 		}
@@ -284,7 +289,7 @@ impl List {
 			NIL
 		} else {
 			CONS(Box::new(items[0].clone()), Box::new(LIST(List::from_vec(
-												tail(items)))))
+												items[1..].to_vec()))))
 		}
 	}
 

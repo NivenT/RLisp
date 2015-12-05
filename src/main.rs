@@ -74,7 +74,7 @@ fn main() {
 		input.clear();
 		result = Ok(Datum::LIST(List::NIL));
 
-		print!("RLisp>> "); 
+		print!("{}", BrightCyan.paint("RLisp>> ")); 
 		io::stdout().flush().ok().expect("Could not flush stdout");
 		io::stdin().read_line(&mut input).ok().expect("Failed to read line");
 		loop {
@@ -98,14 +98,7 @@ fn main() {
 		   result != Err(NO_INPUT) {
 			result = eval(&parse(&mut tokenize(&input)), &mut env)
 		} match result {
-			Ok(ref a) 	=> {
-				if let Datum::ATOM(Atom::STRING(ref s)) = *a {
-					println!("\"{}\"", s);
-				} else {
-					println!("{}", *a);
-				}
-				env.set("%%%".to_string(), a.clone());
-			},
+			Ok(ref a) 	=> {println!("{}", BrightYellow.paint(a.clone()));env.set("%%%".to_string(), a.clone());},
 			Err(ref a)	=> println!("{}", Blue.paint(a.message()))
 		} if let Err(UNBOUND_VARIABLE(name)) = result.clone() {
 			let mut min = ("".to_string(), 99999);
