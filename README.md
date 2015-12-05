@@ -49,3 +49,4 @@ load | opens a file, wraps contents in progn, and evaluates | sample.txt: (defun
 - [X] Add optional parameters
 - [X] Add rest parameter
 - [X] Add cond and case
+- [ ] Add BigInt class
